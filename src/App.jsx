@@ -236,34 +236,79 @@ function CityBannerImage({ id, title, heroImg }) {
 export default function App() {
   return (
     <div style={{ minHeight: "100vh" }}>
-      <header
-        style={{
-          borderBottom: "1px solid #022",
-          padding: "28px 48px",
-          display: "flex",
-          gap: 24,
-          alignItems: "center",
-          background: "#000",
-        }}
-      >
-        <NavLink
-          to="/"
-          style={{ display: "flex", alignItems: "center", gap: 16, textDecoration: "none" }}
-        >
-          <img
-  src="/waveportalslogo.png"
-  alt="WavePortals logo"
-  className="logo-img"
-  style={{ height: 100, width: "auto" }}
-/>
-          <span className="glow-text" style={{ fontWeight: 800, fontSize: "2rem" }}>
-            WavePortals.com
-          </span>
-        </NavLink>
-        <div style={{ marginLeft: "auto", fontSize: "1.2rem" }} className="glow-text">
-          Metaverse gateways by IceManWave
-        </div>
-      </header>
+   <header
+  style={{
+    position: "relative",
+    borderBottom: "1px solid #022",
+    padding: "28px 48px",
+    minHeight: "50px",
+    backgroundImage: "url('/images/branding/wave_portal_2.jpg')", // <-- check this path
+    backgroundSize: "100% auto",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    display: "flex",
+    alignItems: "center",
+    gap: 24,
+  }}
+>
+  {/* overlay for readability */}
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background:
+        "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.55) 100%)",
+    }}
+  />
+
+  {/* content layer */}
+  <NavLink
+    to="/"
+    style={{
+      position: "relative",
+      zIndex: 1,
+      display: "flex",
+      alignItems: "center",
+      textDecoration: "none",
+    }}
+  >
+    <img
+      src="/waveportalslogo.png"
+      alt="WavePortals logo"
+      style={{
+        height: 140,
+        width: "auto",
+        filter: "drop-shadow(0 6px 16px rgba(0,0,0,.6))",
+      }}
+    />
+  </NavLink>
+
+  <div
+    className="glow-text"
+    style={{
+      position: "relative",
+      zIndex: 1,
+      marginLeft: "auto",
+      fontSize: "1.4rem",
+      fontStyle: "italic",
+      fontWeight: 500,
+      textShadow: "0 2px 8px rgba(0,0,0,.8)",
+      paddingLeft: 12,
+    }}
+  >
+    WavePortals: riding the wave of{" "}
+    <a
+      href="https://earthmeta.ai"
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ fontWeight: 700, color: "#0ff", textDecoration: "none" }}
+    >
+      EarthMeta.ai
+    </a>
+  </div>
+</header>
+
+
 
       <Routes>
         <Route path="/" element={<Home />} />
@@ -273,9 +318,29 @@ export default function App() {
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
 
-      <footer style={{ padding: "20px 32px", marginTop: 32, textAlign: "center" }} className="glow-footer">
-        © {new Date().getFullYear()} WavePortals — built by Ivy
-      </footer>
+      <footer
+  className="glow-footer"
+  style={{ padding: "20px 32px", marginTop: 32, textAlign: "center" }}
+>
+  <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+    <span>© {new Date().getFullYear()} WavePortals — built by</span>
+    <img
+      src="/images/branding/ivy-mark.png"
+      alt="Ivy logo"
+      className="ivy-logo"
+      style={{
+        height: 48,   // large enough to read
+        width: "auto",
+        transition: "transform 0.3s ease, filter 0.3s ease",
+        filter: "brightness(1.2) saturate(1.4)", // always brighter pink
+      }}
+    />
+  </div>
+</footer>
+
+
+
+
     </div>
   );
 }
@@ -624,7 +689,15 @@ function Home() {
 
   return (
     <main>
-      <h2 className="glow-text" style={{ marginTop: 0 }}>Cities & Land</h2>
+      <h2 className="glow-text" style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}>
+  Cities and Lands of IceManWave
+  <img
+    src="/images/branding/icemanwave-logo.png"
+    alt="IceManWave logo"
+    style={{ height: 72, width: "auto", opacity: 0.9 }}
+  />
+</h2>
+
 
       {/* Toolbar */}
       <div className="toolbar">
