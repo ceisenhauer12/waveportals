@@ -1,7 +1,7 @@
 // src/App.jsx
 import { useState, useMemo, useEffect } from "react";
 import { Routes, Route, NavLink, useParams, Navigate } from "react-router-dom";
-import logo from "./assets/waveportalslogo.png";
+
 import "./App.css";
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
@@ -250,7 +250,12 @@ export default function App() {
           to="/"
           style={{ display: "flex", alignItems: "center", gap: 16, textDecoration: "none" }}
         >
-          <img src={logo} alt="WavePortals logo" className="logo-img" style={{ height: 100, width: "auto" }} />
+          <img
+  src="/waveportalslogo.png"
+  alt="WavePortals logo"
+  className="logo-img"
+  style={{ height: 100, width: "auto" }}
+/>
           <span className="glow-text" style={{ fontWeight: 800, fontSize: "2rem" }}>
             WavePortals.com
           </span>
