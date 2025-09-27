@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="280" viewBox="0 0 1600 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#000000"></stop>
+      <stop offset="1" stop-color="#011a26"></stop>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00eaff"></stop>
+      <stop offset="1" stop-color="#8fe9ff"></stop>
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="b"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Panel -->
+  <rect x="10" y="10" width="1580" height="260" rx="22" ry="22" fill="url(#bg)" stroke="#044966" stroke-width="2"></rect>
+  <!-- Outer glow ring -->
+  <rect x="10" y="10" width="1580" height="260" rx="22" ry="22" fill="none" stroke="#00eaff" stroke-opacity="0.25" stroke-width="8" filter="url(#glow)"></rect>
+
+  <!-- Subtle wave lines -->
+  <path d="M40,200 C320,160 560,240 840,200 C1120,160 1360,240 1540,200" fill="none" stroke="#00eaff" stroke-opacity="0.18" stroke-width="6"></path>
+  <path d="M40,222 C320,182 560,262 840,222 C1120,182 1360,262 1540,222" fill="none" stroke="#00eaff" stroke-opacity="0.12" stroke-width="6"></path>
+
+  <!-- Headline -->
+  <text x="80" y="150" font-family="system-ui,Segoe UI,Roboto,Arial,sans-serif" font-size="56" font-weight="800" fill="url(#accent)" filter="url(#glow)">
+    Enter the WavePortal
+  </text>
+
+  <!-- Tagline (small & subtle) -->
+  <text x="84" y="190" font-family="system-ui,Segoe UI,Roboto,Arial,sans-serif" font-size="24" fill="#a7dff1" opacity="0.9">
+    Experience Portal • Explore • Book • Play
+  </text>
+</svg>
