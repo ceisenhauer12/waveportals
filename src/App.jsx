@@ -298,7 +298,8 @@ const CITY_DB = {
         channelId: "UCZuVv_Qnvp-2hIqwBIoq5Aw", // RTC Public Affairs UC channel ID
         videoUrl: "", // optional single past event
         fallbackVideoUrl: "https://www.youtube.com/watch?v=7l7a1uigRg4", // replay filler
-        affiliateUrl: "https://example.com/affiliate?campaign=rtc-grad",
+        affiliateUrl: "https://www.navygear.com/?utm_source=waveportals&utm_medium=affiliate&utm_campaign=rtc",
+
       },
     ],
   },
@@ -803,18 +804,31 @@ function LandDetail() {
         <NavLink to={`/city/${id}`} className="btn btn-quiet">Back to lands</NavLink>
       </div>
 
-      <div className="affiliate">
-        {land.affiliateUrl ? (
-          <>
-            <div className="muted" style={{ marginBottom: 6 }}>Sponsored / Affiliate</div>
-            <a href={land.affiliateUrl} target="_blank" rel="noopener noreferrer">
-              Visit our partner
-            </a>
-          </>
-        ) : (
-          <span className="muted">Affiliate spot (add your link in CITY_DB)</span>
-        )}
-      </div>
+      <div className="affiliate" style={{ marginTop: 24, textAlign: "center" }}>
+  {land.affiliateUrl ? (
+    <a
+      href={land.affiliateUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "inline-block",
+        padding: 12,
+        border: "1px solid #044966",
+        borderRadius: 8,
+        background: "#000",
+      }}
+    >
+      <img
+        src="/images/affiliate/navygear.png"
+        alt="NavyGear Affiliate"
+        style={{ maxHeight: 60, width: "auto" }}
+      />
+    </a>
+  ) : (
+    <span className="muted">Affiliate spot (add your link in CITY_DB)</span>
+  )}
+</div>
+
     </main>
   );
 }
@@ -837,6 +851,44 @@ function toEmbedUrl(url) {
   } catch {
     return "";
   }
+}
+/* ====================== Affiliate banner ====================== */
+function AffiliateBanner({ href, label = "Shop NavyGear.com", note = "Officially licensed gear" }) {
+  if (!href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow sponsored"
+      className="glow-panel"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: 14,
+        borderRadius: 12,
+        border: "1px solid #044966",
+        textDecoration: "none",
+        marginTop: 16,
+      }}
+      title="Affiliate link"
+    >
+      <img
+        src="/images/affiliates/navygear-logo.png"
+        alt="NavyGear"
+        style={{ height: 28, width: "auto", filter: "drop-shadow(0 0 6px rgba(0,255,255,.25))" }}
+        onError={(e) => {
+          // icon fallback if you haven’t added a logo yet
+          e.currentTarget.style.display = "none";
+        }}
+      />
+      <div style={{ display: "grid" }}>
+        <strong style={{ color: "#0ff" }}>{label}</strong>
+        <span className="muted" style={{ fontSize: ".9rem" }}>{note}</span>
+      </div>
+      <span style={{ marginLeft: "auto" }} className="btn btn-primary">Shop</span>
+    </a>
+  );
 }
 
 /* ===================================== 404 ===================================== */
