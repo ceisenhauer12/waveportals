@@ -2,6 +2,25 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Routes, Route, NavLink, useParams, Navigate } from "react-router-dom";
 import "./App.css";
+import { useLocation } from "react-router-dom";
+
+const CANONICAL_ORIGIN = "https://www.waveportals.com";
+function CanonicalTag() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    const href = CANONICAL_ORIGIN + pathname + search;
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "canonical";
+      document.head.appendChild(link);
+    }
+    link.href = href;
+  }, [pathname, search]);
+  return null;
+}
+<CanonicalTag />
+
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
 function isInCTLiveWindow() {
