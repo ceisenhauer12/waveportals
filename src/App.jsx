@@ -1,9 +1,16 @@
 // src/App.jsx
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Routes, Route, NavLink, useParams, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  NavLink,
+  useParams,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import "./App.css";
-import { useLocation } from "react-router-dom";
 
+/* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
 function CanonicalTag() {
   const { pathname, search } = useLocation();
@@ -19,13 +26,34 @@ function CanonicalTag() {
   }, [pathname, search]);
   return null;
 }
-<CanonicalTag />
 
+/* ===================== Partner / referral link helper ===================== */
+const MYE_REF = ""; // <-- drop your myearthmeta referral code here when you get it
+const DEFAULT_UTM = {
+  utm_source: "waveportals",
+  utm_medium: "site",
+  utm_campaign: "earthmeta_cta",
+};
+function buildPartnerLink(raw) {
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    if (MYE_REF) u.searchParams.set("ref", MYE_REF);
+    for (const [k, v] of Object.entries(DEFAULT_UTM)) {
+      if (!u.searchParams.has(k)) u.searchParams.set(k, v);
+    }
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
 function isInCTLiveWindow() {
   const now = new Date();
-  const chicago = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+  const chicago = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Chicago" })
+  );
   const d = chicago.getDay(); // Thu = 4
   const h = chicago.getHours();
   const m = chicago.getMinutes();
@@ -38,7 +66,7 @@ function isInCTLiveWindow() {
 function useIsInCTLiveWindow() {
   const [inWindow, setInWindow] = useState(isInCTLiveWindow());
   useEffect(() => {
-    const id = setInterval(() => setInWindow(isInCTLiveWindow()), 15_000); // was 60_000
+    const id = setInterval(() => setInWindow(isInCTLiveWindow()), 15_000);
     return () => clearInterval(id);
   }, []);
   return inWindow;
@@ -71,11 +99,14 @@ function LiveBadge() {
 /* ===================== Countdown to next Thursday 9:30 CT ===================== */
 function nextThursdayAt0930CT() {
   const now = new Date();
-  const chicagoNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
+  const chicagoNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Chicago" })
+  );
   const d = new Date(chicagoNow);
   const day = d.getDay(); // 0..6 (Thu=4)
   const isThu = day === 4;
-  const after1230 = d.getHours() > 12 || (d.getHours() === 12 && d.getMinutes() > 30);
+  const after1230 =
+    d.getHours() > 12 || (d.getHours() === 12 && d.getMinutes() > 30);
 
   let addDays;
   if (isThu && !after1230) addDays = 0;
@@ -86,7 +117,9 @@ function nextThursdayAt0930CT() {
   d.setDate(d.getDate() + addDays);
   d.setHours(9, 30, 0, 0);
 
-  return new Date(new Date(d.toLocaleString("en-US", { timeZone: "America/Chicago" })));
+  return new Date(
+    new Date(d.toLocaleString("en-US", { timeZone: "America/Chicago" }))
+  );
 }
 
 function useCountdownToNextRTC() {
@@ -128,7 +161,8 @@ function RTCScheduleNote() {
         RTC Graduation livestream: <strong>Thursdays, 9:30 AM CT</strong>.
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
-        If the player shows “unavailable,” it’s before showtime or there’s no ceremony this week.
+        If the player shows “unavailable,” it’s before showtime or there’s no
+        ceremony this week.
       </div>
     </div>
   );
@@ -159,7 +193,11 @@ function DeferredIframe(props) {
   const { ref, inView } = useInView();
   return (
     <div ref={ref} className="video-wrap" style={{ marginTop: 12 }}>
-      {inView ? <iframe loading="lazy" {...props} /> : <div style={{ width: "100%", height: "100%", background: "#000" }} />}
+      {inView ? (
+        <iframe loading="lazy" {...props} />
+      ) : (
+        <div style={{ width: "100%", height: "100%", background: "#000" }} />
+      )}
     </div>
   );
 }
@@ -188,7 +226,9 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
       <div className="video-wrap" style={{ marginTop: 12 }}>
         {!useFallback && hasUC && (
           <iframe
-            src={`https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}&autoplay=1&mute=1`}
+            src={`https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(
+              channelId
+            )}&autoplay=1&mute=1`}
             title={title || "Live Stream"}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
@@ -205,8 +245,13 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
             style={{ border: 0, width: "100%", height: "100%" }}
           />
         ) : (useFallback || !hasUC) && !embedFallback ? (
-          <div className="glow-panel" style={{ display: "grid", placeItems: "center", padding: 40 }}>
-            <span className="muted">RTC livestream placeholder — no fallback video configured.</span>
+          <div
+            className="glow-panel"
+            style={{ display: "grid", placeItems: "center", padding: 40 }}
+          >
+            <span className="muted">
+              RTC livestream placeholder — no fallback video configured.
+            </span>
           </div>
         ) : null}
       </div>
@@ -214,7 +259,9 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
       <div className="btn-row">
         {channelId && (
           <a
-            href={`https://www.youtube.com/${channelId.startsWith("@") ? channelId : `channel/${channelId}`}/streams`}
+            href={`https://www.youtube.com/${
+              channelId.startsWith("@") ? channelId : `channel/${channelId}`
+            }/streams`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-quiet"
@@ -245,9 +292,16 @@ function CityTileImage({ id, title, heroImg }) {
       height={900}
       onError={(e) => {
         e.currentTarget.onerror = null;
-        e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(id)}/1600/900`;
+        e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(
+          id
+        )}/1600/900`;
       }}
-      style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }}
+      style={{
+        width: "100%",
+        height: "180px",
+        objectFit: "cover",
+        display: "block",
+      }}
     />
   );
 }
@@ -264,9 +318,16 @@ function CityBannerImage({ id, title, heroImg }) {
       height={900}
       onError={(e) => {
         e.currentTarget.onerror = null;
-        e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(id)}/1600/900`;
+        e.currentTarget.src = `https://picsum.photos/seed/${encodeURIComponent(
+          id
+        )}/1600/900`;
       }}
-      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: "block",
+      }}
     />
   );
 }
@@ -274,14 +335,18 @@ function CityBannerImage({ id, title, heroImg }) {
 /* ============================== App Shell ============================== */
 export default function App() {
   useEffect(() => {
-    const lowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+    const lowCores =
+      navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
     const hiDPRSmall = window.devicePixelRatio > 2 && window.innerWidth < 900;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")
+      ?.matches;
     if (lowCores || hiDPRSmall || reduced) document.body.classList.add("perf");
   }, []);
 
   return (
     <div style={{ minHeight: "100vh" }}>
+      <CanonicalTag />
+
       <header
         style={{
           position: "relative",
@@ -301,7 +366,8 @@ export default function App() {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.55) 100%)",
+            background:
+              "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.55) 100%)",
           }}
         />
         <NavLink
@@ -317,7 +383,11 @@ export default function App() {
           <img
             src="/waveportalslogo.png"
             alt="WavePortals logo"
-            style={{ height: 140, width: "auto", boxShadow: "0 6px 16px rgba(0,0,0,.6)" }}
+            style={{
+              height: 140,
+              width: "auto",
+              boxShadow: "0 6px 16px rgba(0,0,0,.6)",
+            }}
           />
         </NavLink>
 
@@ -335,7 +405,12 @@ export default function App() {
           }}
         >
           WavePortals: riding the wave of{" "}
-          <a href="https://earthmeta.ai" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: "#0ff", textDecoration: "none" }}>
+          <a
+            href="https://earthmeta.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontWeight: 700, color: "#0ff", textDecoration: "none" }}
+          >
             EarthMeta.ai
           </a>
         </div>
@@ -349,14 +424,22 @@ export default function App() {
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
 
-      <footer className="glow-footer" style={{ padding: "20px 32px", marginTop: 32, textAlign: "center" }}>
+      <footer
+        className="glow-footer"
+        style={{ padding: "20px 32px", marginTop: 32, textAlign: "center" }}
+      >
         <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
           <span>© {new Date().getFullYear()} WavePortals — built by</span>
           <img
             src="/images/branding/ivy-mark.png"
             alt="Ivy logo"
             className="ivy-logo"
-            style={{ height: 48, width: "auto", transition: "transform 0.3s ease, filter 0.3s ease", filter: "brightness(1.2) saturate(1.4)" }}
+            style={{
+              height: 48,
+              width: "auto",
+              transition: "transform 0.3s ease, filter 0.3s ease",
+              filter: "brightness(1.2) saturate(1.4)",
+            }}
           />
         </div>
       </footer>
@@ -368,30 +451,49 @@ export default function App() {
 const CITY_DB = {
   "north-chicago": {
     title: "North Chicago – US Navy RTC",
-    blurb: "Great Lakes Naval Station gateway. Hospitality, graduation events, and family lodging funnels.",
+    blurb:
+      "Great Lakes Naval Station gateway. Hospitality, graduation events, and family lodging funnels.",
     tags: ["Navy", "Hospitality", "Family Traffic"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
     lands: [
       {
         id: "rtc-ceremonial-drill-hall",
         name: "RTC Ceremonial Drill Hall",
-        blurb: "Graduation ceremonies hub; anchor for weekend surges and family itineraries.",
+        blurb:
+          "Graduation ceremonies hub; anchor for weekend surges and family itineraries.",
         channelId: "UCZuVv_Qnvp-2hIqwBIoq5Aw",
         videoUrl: "",
         fallbackVideoUrl: "https://www.youtube.com/watch?v=7l7a1uigRg4",
-        affiliateUrl: "https://www.navygear.com/?utm_source=waveportals&utm_medium=affiliate&utm_campaign=rtc",
+        affiliateUrl:
+          "https://www.navygear.com/?utm_source=waveportals&utm_medium=affiliate&utm_campaign=rtc",
       },
     ],
   },
 
   "baden-at": {
     title: "Baden bei Wien, Austria – Spa & UNESCO",
-    blurb: "Prestigious spa town with Roman spa heritage, UNESCO recognition, Casino Baden, and Beethoven history.",
+    blurb:
+      "Prestigious spa town with Roman spa heritage, UNESCO recognition, Casino Baden, and Beethoven history.",
     tags: ["UNESCO", "Casino", "Beethoven"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/101096994512716552136651044731009297320",
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/101096994512716552136651044731009297320",
     lands: [
-      { id: "casino-baden", name: "Casino Baden", blurb: "High-traffic entertainment anchor with regional draw.", videoUrl: "https://www.youtube.com/watch?v=TB4LEtAShe0", affiliateUrl: "https://www.casinos.at/casinos/baden" },
-      { id: "beethovenhaus", name: "Beethovenhaus", blurb: "Historic residence & museum celebrating Beethoven’s summers in Baden.", videoUrl: "https://www.youtube.com/watch?v=hdWyYn0E4Ys&t=757s", affiliateUrl: "" },
+      {
+        id: "casino-baden",
+        name: "Casino Baden",
+        blurb: "High-traffic entertainment anchor with regional draw.",
+        videoUrl: "https://www.youtube.com/watch?v=TB4LEtAShe0",
+        affiliateUrl: "https://www.casinos.at/casinos/baden",
+      },
+      {
+        id: "beethovenhaus",
+        name: "Beethovenhaus",
+        blurb:
+          "Historic residence & museum celebrating Beethoven’s summers in Baden.",
+        videoUrl: "https://www.youtube.com/watch?v=hdWyYn0E4Ys&t=757s",
+        affiliateUrl: "",
+      },
     ],
   },
 
@@ -399,128 +501,277 @@ const CITY_DB = {
     title: "Värmdö (Viggsö Island), Sweden – ABBA cottage",
     blurb: "The ABBA cottage landmark in the Stockholm archipelago.",
     tags: ["ABBA", "Archipelago", "Pilgrimage"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/1981164889395449286388285702829111517",
-    lands: [{ id: "viggso-abba-cottage", name: "Viggsö ABBA Cottage", blurb: "Iconic songwriting hideaway; essential ABBA stop.", videoUrl: "https://www.youtube.com/watch?v=FHDRRiX1now", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/1981164889395449286388285702829111517",
+    lands: [
+      {
+        id: "viggso-abba-cottage",
+        name: "Viggsö ABBA Cottage",
+        blurb: "Iconic songwriting hideaway; essential ABBA stop.",
+        videoUrl: "https://www.youtube.com/watch?v=FHDRRiX1now",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "deadwood-sd": {
     title: "Deadwood, SD – Legendary Old West town",
-    blurb: "Historic saloons and casinos in a Black Hills Old West setting.",
+    blurb:
+      "Historic saloons and casinos in a Black Hills Old West setting.",
     tags: ["Old West", "Casinos", "Tourism"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/152919129197892936510323545052036063139",
-    lands: [{ id: "saloon-no-10", name: "Saloon No. 10 / Main Street", blurb: "Wild Bill lore + high foot traffic on Main.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/152919129197892936510323545052036063139",
+    lands: [
+      {
+        id: "saloon-no-10",
+        name: "Saloon No. 10 / Main Street",
+        blurb: "Wild Bill lore + high foot traffic on Main.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "durant-ok": {
     title: "Durant, OK – Home of the Choctaw Indian Nation",
     blurb: "Cultural Center, Casino & Resort.",
     tags: ["Choctaw", "Casino", "Resort"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
-    lands: [{ id: "choctaw-casino-resort", name: "Choctaw Casino & Resort", blurb: "Flagship entertainment and hospitality anchor.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+    lands: [
+      {
+        id: "choctaw-casino-resort",
+        name: "Choctaw Casino & Resort",
+        blurb: "Flagship entertainment and hospitality anchor.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "galveston-tx": {
     title: "Galveston, TX – Gulf Coast tourism hub",
     blurb: "Beaches, cruises, and The Strand historic district.",
     tags: ["Beaches", "Cruises", "Tourism"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/3796720729377725520913484692403980473937",
-    lands: [{ id: "the-strand", name: "The Strand Historic District", blurb: "Shops, museums, and cruise passenger flow.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/3796720729377725520913484692403980473937",
+    lands: [
+      {
+        id: "the-strand",
+        name: "The Strand Historic District",
+        blurb: "Shops, museums, and cruise passenger flow.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "roskilde-dk": {
     title: "Roskilde, Denmark – Festival city",
-    blurb: "World-renowned for the Roskilde Festival; historic cathedral town.",
+    blurb:
+      "World-renowned for the Roskilde Festival; historic cathedral town.",
     tags: ["Festival", "Music", "Culture"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/3010604377317538654113723260261144075391",
-    lands: [{ id: "roskilde-festival-grounds", name: "Roskilde Festival Grounds", blurb: "One of Europe’s largest music festivals.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/3010604377317538654113723260261144075391",
+    lands: [
+      {
+        id: "roskilde-festival-grounds",
+        name: "Roskilde Festival Grounds",
+        blurb: "One of Europe’s largest music festivals.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "cluj-napoca-ro": {
     title: "Cluj-Napoca, Romania – University & culture",
     blurb: "Major university center; home of the UNTOLD Festival.",
     tags: ["University", "Festival", "Tech"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/392837052132320215465070341702007820571",
-    lands: [{ id: "cluj-arena-untold", name: "Cluj Arena / UNTOLD", blurb: "Festival epicenter with massive international draw.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/392837052132320215465070341702007820571",
+    lands: [
+      {
+        id: "cluj-arena-untold",
+        name: "Cluj Arena / UNTOLD",
+        blurb: "Festival epicenter with massive international draw.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "colmar-fr": {
     title: "Colmar, France – Alsace jewel",
     blurb: "Picturesque old town; inspiration for Beauty and the Beast.",
     tags: ["Alsace", "Old Town", "Tourism"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/50561775335783996739267028111362698303",
-    lands: [{ id: "little-venice", name: "Little Venice", blurb: "Iconic canals and timbered houses.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/50561775335783996739267028111362698303",
+    lands: [
+      {
+        id: "little-venice",
+        name: "Little Venice",
+        blurb: "Iconic canals and timbered houses.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "college-park-md": {
     title: "College Park, MD – University of Maryland",
     blurb: "Academia, research, and proximity to Washington, D.C.",
     tags: ["University", "Research", "DC Area"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
-    lands: [{ id: "xfinity-center", name: "Xfinity Center", blurb: "Maryland Terrapins arena and events hub.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
+    lands: [
+      {
+        id: "xfinity-center",
+        name: "Xfinity Center",
+        blurb: "Maryland Terrapins arena and events hub.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "jeonju-kr": {
     title: "Jeonju, South Korea – UNESCO & food",
     blurb: "UNESCO-listed historic center; birthplace of bibimbap.",
     tags: ["UNESCO", "Food", "Hanok"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/2887003481325296536527846355464262990798",
-    lands: [{ id: "jeonju-hanok-village", name: "Jeonju Hanok Village", blurb: "Traditional architecture and culinary magnet.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/2887003481325296536527846355464262990798",
+    lands: [
+      {
+        id: "jeonju-hanok-village",
+        name: "Jeonju Hanok Village",
+        blurb: "Traditional architecture and culinary magnet.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "ostrava-cz": {
     title: "Ostrava, Czech Republic – Industry to culture",
     blurb: "Industrial city turned culture/tech hub.",
     tags: ["Tech", "Industry", "Culture"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/8620721531334460754235230511301466764",
-    lands: [{ id: "dolni-vitkovice", name: "Dolní Vítkovice", blurb: "Legendary industrial complex reborn as culture zone.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/8620721531334460754235230511301466764",
+    lands: [
+      {
+        id: "dolni-vitkovice",
+        name: "Dolní Vítkovice",
+        blurb: "Legendary industrial complex reborn as culture zone.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "reutlingen-de": {
     title: "Reutlingen, Germany – Near Stuttgart",
     blurb: "Historic German city; high livability and strong economy.",
     tags: ["Historic", "Economy", "Baden-Württemberg"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/292573116128912471666181257203360368220",
-    lands: [{ id: "marienkirche", name: "Marienkirche", blurb: "Gothic church and city symbol.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/292573116128912471666181257203360368220",
+    lands: [
+      {
+        id: "marienkirche",
+        name: "Marienkirche",
+        blurb: "Gothic church and city symbol.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "round-rock-tx": {
     title: "Round Rock, TX – Dell & sports",
     blurb: "Dell HQ, Dell Diamond, and Kalahari Falls.",
     tags: ["Tech", "Baseball", "Resort"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/50838639324434473282824924603582481238",
-    lands: [{ id: "dell-diamond", name: "Dell Diamond", blurb: "Home of the Round Rock Express; family sports magnet.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/50838639324434473282824924603582481238",
+    lands: [
+      {
+        id: "dell-diamond",
+        name: "Dell Diamond",
+        blurb: "Home of the Round Rock Express; family sports magnet.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "cedar-park-tx": {
     title: "Cedar Park, TX – Austin metro growth",
     blurb: "Strong in sports and concerts (H-E-B Center).",
     tags: ["Sports", "Concerts", "Growth"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/2117950553333762095295601353507265581",
-    lands: [{ id: "heb-center", name: "H-E-B Center", blurb: "Arena for AHL hockey, concerts, and events.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/2117950553333762095295601353507265581",
+    lands: [
+      {
+        id: "heb-center",
+        name: "H-E-B Center",
+        blurb: "Arena for AHL hockey, concerts, and events.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "grapevine-tx": {
     title: "Grapevine, TX – DFW gateway",
-    blurb: "Direct tie to DFW Airport; huge utility for travel and tourism.",
+    blurb:
+      "Direct tie to DFW Airport; huge utility for travel and tourism.",
     tags: ["DFW", "Tourism", "Transit"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
-    lands: [{ id: "gaylord-texan", name: "Gaylord Texan", blurb: "Convention/resort juggernaut + seasonal events.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+    lands: [
+      {
+        id: "gaylord-texan",
+        name: "Gaylord Texan",
+        blurb: "Convention/resort juggernaut + seasonal events.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "norrkoping-se": {
     title: "Norrköping, Sweden – Reinvented industrial hub",
-    blurb: "Historic industrial core turned into a tech & creative cluster.",
+    blurb:
+      "Historic industrial core turned into a tech & creative cluster.",
     tags: ["Tech", "Creative", "Industrial"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
-    lands: [{ id: "visualization-center-c", name: "Visualization Center C", blurb: "Science visualization and education magnet.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
+    lands: [
+      {
+        id: "visualization-center-c",
+        name: "Visualization Center C",
+        blurb: "Science visualization and education magnet.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 
   "carolina-pr": {
     title: "Carolina, Puerto Rico – SJU gateway",
-    blurb: "Right next to San Juan’s airport; casino resorts & high tourism.",
+    blurb:
+      "Right next to San Juan’s airport; casino resorts & high tourism.",
     tags: ["SJU", "Resorts", "Tourism"],
-    earthmetaUrl: "https://app.earthmeta.ai/city/955592025429317683616476297681314486268",
-    lands: [{ id: "isla-verde-beach", name: "Isla Verde Beachfront", blurb: "Resort-lined beach; premium foot traffic.", videoUrl: "", affiliateUrl: "" }],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/955592025429317683616476297681314486268",
+    lands: [
+      {
+        id: "isla-verde-beach",
+        name: "Isla Verde Beachfront",
+        blurb: "Resort-lined beach; premium foot traffic.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+    ],
   },
 };
 
@@ -534,25 +785,48 @@ function Home() {
     const q = query.trim().toLowerCase();
     let filtered = q
       ? arr.filter((c) => {
-          const hay = (c.title + " " + c.blurb + " " + (c.tags || []).join(" ")).toLowerCase();
+          const hay = (
+            c.title +
+            " " +
+            c.blurb +
+            " " +
+            (c.tags || []).join(" ")
+          ).toLowerCase();
           return hay.includes(q);
         })
       : arr;
 
-    if (sort === "az") filtered = filtered.slice().sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "az")
+      filtered = filtered.slice().sort((a, b) => a.title.localeCompare(b.title));
     return filtered;
   }, [query, sort]);
 
   return (
     <main>
-      <h2 className="glow-text" style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}>
+      <h2
+        className="glow-text"
+        style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}
+      >
         Cities and Lands of IceManWave
-        <img src="/images/branding/icemanwave-logo.png" alt="IceManWave logo" style={{ height: 72, width: "auto", opacity: 0.9 }} />
+        <img
+          src="/images/branding/icemanwave-logo.png"
+          alt="IceManWave logo"
+          style={{ height: 72, width: "auto", opacity: 0.9 }}
+        />
       </h2>
 
       <div className="toolbar">
-        <input className="input" placeholder="Search cities, blurbs, tags…" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select className="select" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <input
+          className="input"
+          placeholder="Search cities, blurbs, tags…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          className="select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
           <option value="az">Sort A → Z</option>
         </select>
       </div>
@@ -560,7 +834,14 @@ function Home() {
       <div className="card-list" style={{ marginTop: 12 }}>
         {cities.map((c) => (
           <div key={c.id} className="card">
-            <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #044966", marginBottom: 10 }}>
+            <div
+              style={{
+                borderRadius: 10,
+                overflow: "hidden",
+                border: "1px solid #044966",
+                marginBottom: 10,
+              }}
+            >
               <CityTileImage id={c.id} title={c.title} heroImg={c.heroImg} />
             </div>
             <h3>{c.title}</h3>
@@ -568,14 +849,24 @@ function Home() {
             {c.tags?.length ? (
               <div className="chips" style={{ marginTop: 8 }}>
                 {c.tags.map((t) => (
-                  <span key={t} className="chip">{t}</span>
+                  <span key={t} className="chip">
+                    {t}
+                  </span>
                 ))}
               </div>
             ) : null}
             <div className="btn-row">
-              <NavLink to={`/city/${c.id}`} className="btn btn-primary">View</NavLink>
+              <NavLink to={`/city/${c.id}`} className="btn btn-primary">
+                View
+              </NavLink>
               {c.earthmetaUrl ? (
-                <a href={c.earthmetaUrl} target="_blank" rel="noopener noreferrer" className="btn btn-quiet" title="Open this city on EarthMeta.ai">
+                <a
+                  href={buildPartnerLink(c.earthmetaUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-quiet"
+                  title="Open this city on EarthMeta.ai"
+                >
                   🌍 EarthMeta
                 </a>
               ) : null}
@@ -597,41 +888,73 @@ function CityDetail() {
   return (
     <main>
       <p>
-        <NavLink to="/" className="glow-text glow-hover" style={{ textDecoration: "none" }}>
+        <NavLink
+          to="/"
+          className="glow-text glow-hover"
+          style={{ textDecoration: "none" }}
+        >
           ← Back
         </NavLink>
       </p>
 
-      <div className="hero" style={{ marginTop: 0, borderRadius: 12, overflow: "hidden", border: "1px solid #044966" }}>
+      <div
+        className="hero"
+        style={{
+          marginTop: 0,
+          borderRadius: 12,
+          overflow: "hidden",
+          border: "1px solid #044966",
+        }}
+      >
         <div style={{ position: "relative", aspectRatio: "16/9" }}>
           <CityBannerImage id={id} title={city.title} heroImg={city.heroImg} />
-          <div className="hero-title" style={{ position: "absolute", bottom: 10, left: 12, right: 12, fontSize: "1.4rem" }}>
+          <div
+            className="hero-title"
+            style={{ position: "absolute", bottom: 10, left: 12, right: 12, fontSize: "1.4rem" }}
+          >
             {city.title}
           </div>
         </div>
       </div>
 
-      <p className="muted" style={{ marginTop: 8 }}>{city.blurb}</p>
+      <p className="muted" style={{ marginTop: 8 }}>
+        {city.blurb}
+      </p>
 
       <div className="btn-row" style={{ marginTop: 8 }}>
-        <NavLink to="/" className="btn btn-quiet">← All cities</NavLink>
+        <NavLink to="/" className="btn btn-quiet">
+          ← All cities
+        </NavLink>
         {city.earthmetaUrl ? (
-          <a href={city.earthmetaUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" title="Open this city on EarthMeta.ai">
+          <a
+            href={buildPartnerLink(city.earthmetaUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            title="Open this city on EarthMeta.ai"
+          >
             🌍 View on EarthMeta.ai
           </a>
         ) : null}
       </div>
 
       <div className="card-list" style={{ marginTop: 12 }}>
-        {city.lands?.length ? city.lands.map((land) => (
-          <div key={land.id} className="card">
-            <h3>{land.name}</h3>
-            <div className="muted clamp-2">{land.blurb}</div>
-            <div className="btn-row">
-              <NavLink to={`/city/${id}/land/${land.id}`} className="btn btn-primary">View</NavLink>
+        {city.lands?.length ? (
+          city.lands.map((land) => (
+            <div key={land.id} className="card">
+              <h3>{land.name}</h3>
+              <div className="muted clamp-2">{land.blurb}</div>
+              <div className="btn-row">
+                <NavLink
+                  to={`/city/${id}/land/${land.id}`}
+                  className="btn btn-primary"
+                >
+                  View
+                </NavLink>
+              </div>
             </div>
-          </div>
-        )) : (
+          ))
+        ) : (
           <div className="muted">No lands added yet.</div>
         )}
       </div>
@@ -654,7 +977,11 @@ function LandDetail() {
   return (
     <main>
       <p style={{ marginBottom: 12 }}>
-        <NavLink to={`/city/${id}`} className="glow-text glow-hover" style={{ textDecoration: "none" }}>
+        <NavLink
+          to={`/city/${id}`}
+          className="glow-text glow-hover"
+          style={{ textDecoration: "none" }}
+        >
           ← Back to {city.title}
         </NavLink>
       </p>
@@ -666,7 +993,11 @@ function LandDetail() {
 
       {isRTC ? (
         <>
-          <LiveOrFallbackPlayer channelId={land.channelId} fallbackUrl={land.fallbackVideoUrl} title={land.name} />
+          <LiveOrFallbackPlayer
+            channelId={land.channelId}
+            fallbackUrl={land.fallbackVideoUrl}
+            title={land.name}
+          />
           <RTCScheduleNote />
           <CountdownToRTC />
         </>
@@ -679,7 +1010,10 @@ function LandDetail() {
           style={{ border: 0, width: "100%", height: "100%" }}
         />
       ) : (
-        <div className="glow-panel" style={{ display: "grid", placeItems: "center", padding: 40 }}>
+        <div
+          className="glow-panel"
+          style={{ display: "grid", placeItems: "center", padding: 40 }}
+        >
           <span className="muted">No video yet</span>
         </div>
       )}
@@ -695,9 +1029,17 @@ function LandDetail() {
             Watch on YouTube
           </a>
         )}
-        <NavLink to={`/city/${id}`} className="btn btn-quiet">Back to lands</NavLink>
+        <NavLink to={`/city/${id}`} className="btn btn-quiet">
+          Back to lands
+        </NavLink>
         {city.earthmetaUrl ? (
-          <a href={city.earthmetaUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" title="Open this city on EarthMeta.ai">
+          <a
+            href={buildPartnerLink(city.earthmetaUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            title="Open this city on EarthMeta.ai"
+          >
             🌍 City on EarthMeta.ai
           </a>
         ) : null}
@@ -775,7 +1117,11 @@ function NotFound() {
     <main>
       <p className="glow-error">
         That page doesn’t exist.{" "}
-        <NavLink to="/" className="glow-text glow-hover" style={{ textDecoration: "none" }}>
+        <NavLink
+          to="/"
+          className="glow-text glow-hover"
+          style={{ textDecoration: "none" }}
+        >
           Go home
         </NavLink>
         .
