@@ -533,21 +533,28 @@ const CITY_DB = {
   },
 
   "durant-ok": {
-    title: "Durant, OK – Home of the Choctaw Indian Nation",
-    blurb: "Cultural Center, Casino & Resort.",
-    tags: ["Choctaw", "Casino", "Resort"],
-    earthmetaUrl:
-      "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
-    lands: [
-      {
-        id: "choctaw-casino-resort",
-        name: "Choctaw Casino & Resort",
-        blurb: "Flagship entertainment and hospitality anchor.",
-        videoUrl: "",
-        affiliateUrl: "",
-      },
-    ],
-  },
+  title: "Durant, OK – Home of the Choctaw Indian Nation",
+  blurb: "Cultural Center, Casino & Resort.",
+  tags: ["Choctaw", "Casino", "Resort"],
+  earthmetaUrl: "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+  lands: [
+    {
+      id: "choctaw-casino-resort",
+      name: "Choctaw Casino & Resort",
+      blurb: "Stay Awhile. Play Awhile",
+      videoUrl: "https://www.youtube.com/watch?v=GP3MUj5O9Yw",
+      affiliateUrl: "",
+    },
+    {
+      id: "choctaw-cultural-center",
+      name: "Choctaw Cultural Center",
+      blurb: "Fascinating history of the Choctaw Indian Nation.",
+      videoUrl: "https://www.youtube.com/watch?v=nnyqzGxGLXU",
+      affiliateUrl: "",
+    },
+  ],
+},
+
 
   "galveston-tx": {
     title: "Galveston, TX – Gulf Coast tourism hub",
