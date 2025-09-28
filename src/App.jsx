@@ -144,7 +144,7 @@ function CountdownToRTC() {
   return (
     <div className="affiliate" style={{ marginTop: 12 }}>
       <div className="muted" style={{ marginBottom: 6 }}>
-        Next RTC Graduation stream (Thu 9:30 AM CT) in:
+        Next RTC Graduation Live stream (Thu 9:30 AM CT) in:
       </div>
       <div className="glow-text" style={{ fontWeight: 700 }}>
         {days}d {hours}h {minutes}m {seconds}s
