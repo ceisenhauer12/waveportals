@@ -490,8 +490,8 @@ const CITY_DB = {
         id: "beethovenhaus",
         name: "Beethovenhaus",
         blurb:
-          "Historic residence & museum celebrating Beethoven’s summers in Baden.",
-        videoUrl: "https://www.youtube.com/watch?v=hdWyYn0E4Ys&t=757s",
+          "Historic residence & museum celebrating Beethoven’s summers in Baden where he composed Symphony #9 famously called Ode to Joy",
+        videoUrl: "https://youtu.be/CLB5LanzHEc?feature=shared&t=3726",
         affiliateUrl: "",
       },
     ],
