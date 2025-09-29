@@ -676,7 +676,7 @@ const CITY_DB = {
         id: "little-venice",
         name: "Little Venice",
         blurb: "Iconic canals and timbered houses.",
-        videoUrl: "",
+        videoUrl: "https://www.youtube.com/watch?app=desktop&v=qJybMLaIF-4",
         affiliateUrl: "",
       },
     ],
