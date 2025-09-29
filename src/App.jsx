@@ -15,7 +15,10 @@ const CANONICAL_ORIGIN = "https://www.waveportals.com";
 function CanonicalTag() {
   const { pathname, search } = useLocation();
   useEffect(() => {
-    const href = CANONICAL_ORIGIN + pathname + search;
+    // normalize: remove trailing "/" except root
+    const cleanPath =
+      pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+    const href = CANONICAL_ORIGIN + cleanPath + search;
     let link = document.querySelector('link[rel="canonical"]');
     if (!link) {
       link = document.createElement("link");
@@ -25,6 +28,27 @@ function CanonicalTag() {
     link.href = href;
   }, [pathname, search]);
   return null;
+}
+
+/* ===================== Page meta (title + description) ===================== */
+function usePageMeta(title, description) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    const prevDesc = meta.content;
+    meta.content = description || "";
+
+    return () => {
+      document.title = prevTitle;
+      meta.content = prevDesc || "";
+    };
+  }, [title, description]);
 }
 
 /* ===================== Partner / referral link helper ===================== */
@@ -185,16 +209,24 @@ function useInView(rootMargin = "250px") {
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
-  }, [inView]);
+  }, [inView, rootMargin]);
   return { ref, inView };
 }
 
 function DeferredIframe(props) {
   const { ref, inView } = useInView();
   return (
-    <div ref={ref} className="video-wrap" style={{ marginTop: 12 }}>
+    <div
+      ref={ref}
+      className="video-wrap"
+      style={{ marginTop: 12, aspectRatio: "16 / 9" }}
+    >
       {inView ? (
-        <iframe loading="lazy" {...props} />
+        <iframe
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          {...props}
+        />
       ) : (
         <div style={{ width: "100%", height: "100%", background: "#000" }} />
       )}
@@ -223,7 +255,7 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
 
   return (
     <>
-      <div className="video-wrap" style={{ marginTop: 12 }}>
+      <div className="video-wrap" style={{ marginTop: 12, aspectRatio: "16 / 9" }}>
         {!useFallback && hasUC && (
           <iframe
             src={`https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(
@@ -265,16 +297,27 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-quiet"
+            aria-label="Watch on YouTube"
           >
             Watch on YouTube
           </a>
         )}
         {embedFallback && inWindow && hasUC && !useFallback && (
-          <button className="btn btn-quiet" onClick={() => setUseFallback(true)}>
+          <button
+            className="btn btn-quiet"
+            onClick={() => setUseFallback(true)}
+            aria-label="Play replay instead"
+          >
             Play replay instead
           </button>
         )}
       </div>
+
+      {inWindow && hasUC && !useFallback && (
+        <div className="muted" style={{ marginTop: 8 }}>
+          Autoplay is muted by default. Unmute in the player to hear audio.
+        </div>
+      )}
     </>
   );
 }
@@ -285,9 +328,10 @@ function CityTileImage({ id, title, heroImg }) {
   return (
     <img
       src={initialSrc}
-      alt={title}
+      alt={title || "City image"}
       loading="lazy"
       decoding="async"
+      fetchpriority="low"
       width={1600}
       height={900}
       onError={(e) => {
@@ -311,9 +355,8 @@ function CityBannerImage({ id, title, heroImg }) {
   return (
     <img
       src={initialSrc}
-      alt={title}
+      alt={title || "City image"}
       loading="lazy"
-      decoding="async"
       width={1600}
       height={900}
       onError={(e) => {
@@ -332,6 +375,16 @@ function CityBannerImage({ id, title, heroImg }) {
   );
 }
 
+/* ============================== Scroll restore ============================== */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // "instant" is not standard, but browsers ignore unknown behavior; it's fine.
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
+}
+
 /* ============================== App Shell ============================== */
 export default function App() {
   useEffect(() => {
@@ -346,6 +399,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh" }}>
       <CanonicalTag />
+      <ScrollToTop />
 
       <header
         style={{
@@ -379,6 +433,7 @@ export default function App() {
             alignItems: "center",
             textDecoration: "none",
           }}
+          aria-label="WavePortals home"
         >
           <img
             src="/waveportalslogo.png"
@@ -410,6 +465,7 @@ export default function App() {
             target="_blank"
             rel="noopener noreferrer"
             style={{ fontWeight: 700, color: "#0ff", textDecoration: "none" }}
+            aria-label="Open EarthMeta.ai"
           >
             EarthMeta.ai
           </a>
@@ -516,8 +572,7 @@ const CITY_DB = {
 
   "deadwood-sd": {
     title: "Deadwood, SD – Legendary Old West town",
-    blurb:
-      "Historic saloons and casinos in a Black Hills Old West setting.",
+    blurb: "Historic saloons and casinos in a Black Hills Old West setting.",
     tags: ["Old West", "Casinos", "Tourism"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/152919129197892936510323545052036063139",
@@ -533,28 +588,28 @@ const CITY_DB = {
   },
 
   "durant-ok": {
-  title: "Durant, OK – Home of the Choctaw Indian Nation",
-  blurb: "Cultural Center, Casino & Resort.",
-  tags: ["Choctaw", "Casino", "Resort"],
-  earthmetaUrl: "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
-  lands: [
-    {
-      id: "choctaw-casino-resort",
-      name: "Choctaw Casino & Resort",
-      blurb: "Stay Awhile. Play Awhile",
-      videoUrl: "https://www.youtube.com/watch?v=GP3MUj5O9Yw",
-      affiliateUrl: "",
-    },
-    {
-      id: "choctaw-cultural-center",
-      name: "Choctaw Cultural Center",
-      blurb: "Fascinating history of the Choctaw Indian Nation.",
-      videoUrl: "https://www.youtube.com/watch?v=nnyqzGxGLXU",
-      affiliateUrl: "",
-    },
-  ],
-},
-
+    title: "Durant, OK – Home of the Choctaw Indian Nation",
+    blurb: "Cultural Center, Casino & Resort.",
+    tags: ["Choctaw", "Casino", "Resort"],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+    lands: [
+      {
+        id: "choctaw-casino-resort",
+        name: "Choctaw Casino & Resort",
+        blurb: "Stay Awhile. Play Awhile",
+        videoUrl: "https://www.youtube.com/watch?v=GP3MUj5O9Yw",
+        affiliateUrl: "",
+      },
+      {
+        id: "choctaw-cultural-center",
+        name: "Choctaw Cultural Center",
+        blurb: "Fascinating history of the Choctaw Indian Nation.",
+        videoUrl: "https://www.youtube.com/watch?v=nnyqzGxGLXU",
+        affiliateUrl: "",
+      },
+    ],
+  },
 
   "galveston-tx": {
     title: "Galveston, TX – Gulf Coast tourism hub",
@@ -566,11 +621,12 @@ const CITY_DB = {
       {
         id: "the-strand",
         name: "The Strand Historic District @ Saengerfest Park",
-        blurb: "Victorian-era downtown: brick-lined blocks of shops, museums, and nightlife.",
-        videoUrl: "https://www.youtube.com/embed/QIBmMEbLtKw?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1",
+        blurb:
+          "Victorian-era downtown: brick-lined blocks of shops, museums, and nightlife.",
+        videoUrl:
+          "https://www.youtube.com/embed/QIBmMEbLtKw?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1",
         affiliateUrl: "",
       },
-      
     ],
   },
 
@@ -733,8 +789,8 @@ const CITY_DB = {
     blurb:
       "Direct tie to DFW Airport; huge utility for travel and tourism.",
     tags: ["DFW", "Tourism", "Transit"],
-    earthmetaUrl:
-      "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+    // Fix: remove wrong Durant link until you have the real one
+    earthmetaUrl: "https://app.earthmeta.ai/city/2471320665400692406924760230033371170721",
     lands: [
       {
         id: "gaylord-texan",
@@ -785,6 +841,11 @@ const CITY_DB = {
 
 /* =============================== HOME (tiles) =============================== */
 function Home() {
+  usePageMeta(
+    "WavePortals • Cities & Lands of IceManWave",
+    "Browse WavePortals’ EarthMeta cities, lands, live cams, casinos, and cultural anchors."
+  );
+
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("az");
 
@@ -793,13 +854,7 @@ function Home() {
     const q = query.trim().toLowerCase();
     let filtered = q
       ? arr.filter((c) => {
-          const hay = (
-            c.title +
-            " " +
-            c.blurb +
-            " " +
-            (c.tags || []).join(" ")
-          ).toLowerCase();
+          const hay = (c.title + " " + c.blurb + " " + (c.tags || []).join(" ")).toLowerCase();
           return hay.includes(q);
         })
       : arr;
@@ -829,11 +884,13 @@ function Home() {
           placeholder="Search cities, blurbs, tags…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search cities"
         />
         <select
           className="select"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
+          aria-label="Sort cities"
         >
           <option value="az">Sort A → Z</option>
         </select>
@@ -874,6 +931,7 @@ function Home() {
                   rel="noopener noreferrer"
                   className="btn btn-quiet"
                   title="Open this city on EarthMeta.ai"
+                  aria-label={`Open ${c.title} on EarthMeta.ai`}
                 >
                   🌍 EarthMeta
                 </a>
@@ -892,6 +950,8 @@ function CityDetail() {
   const { id } = useParams();
   const city = CITY_DB[id];
   if (!city) return <Navigate to="/404" replace />;
+
+  usePageMeta(`${city.title} • WavePortals`, city.blurb);
 
   return (
     <main>
@@ -918,7 +978,13 @@ function CityDetail() {
           <CityBannerImage id={id} title={city.title} heroImg={city.heroImg} />
           <div
             className="hero-title"
-            style={{ position: "absolute", bottom: 10, left: 12, right: 12, fontSize: "1.4rem" }}
+            style={{
+              position: "absolute",
+              bottom: 10,
+              left: 12,
+              right: 12,
+              fontSize: "1.4rem",
+            }}
           >
             {city.title}
           </div>
@@ -981,6 +1047,8 @@ function LandDetail() {
 
   const embedSrc = toEmbedUrl(land.videoUrl);
   const isRTC = land.channelId === "UCZuVv_Qnvp-2hIqwBIoq5Aw";
+
+  usePageMeta(`${land.name} • ${city.title} • WavePortals`, land.blurb);
 
   return (
     <main>
@@ -1073,15 +1141,64 @@ function toEmbedUrl(url) {
   if (!url) return "";
   try {
     const u = new URL(url);
-    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
-      return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
-    }
-    if (u.hostname === "youtu.be") {
-      return `https://www.youtube.com/embed/${u.pathname.replace("/", "")}`;
-    }
+
+    // Already /embed — return as is
     if (u.hostname.includes("youtube.com") && u.pathname.startsWith("/embed/")) {
-      return url;
+      return u.toString();
     }
+
+    // youtu.be/<id>[?t=...]
+    if (u.hostname === "youtu.be") {
+      const id = u.pathname.slice(1);
+      const params = new URLSearchParams();
+      const keep = [
+        "start",
+        "t",
+        "autoplay",
+        "mute",
+        "playsinline",
+        "rel",
+        "modestbranding",
+        "controls",
+      ];
+      for (const k of keep) if (u.searchParams.has(k)) params.set(k, u.searchParams.get(k));
+      if (!params.has("start") && params.has("t")) {
+        const t = params.get("t");
+        const secs = /^\d+$/.test(t) ? Number(t) : 0;
+        params.set("start", String(secs));
+        params.delete("t");
+      }
+      return `https://www.youtube.com/embed/${id}${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+    }
+
+    // youtube.com/watch?v=<id>
+    if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
+      const id = u.searchParams.get("v");
+      const params = new URLSearchParams();
+      const keep = [
+        "start",
+        "t",
+        "autoplay",
+        "mute",
+        "playsinline",
+        "rel",
+        "modestbranding",
+        "controls",
+      ];
+      for (const k of keep) if (u.searchParams.has(k)) params.set(k, u.searchParams.get(k));
+      if (!params.has("start") && params.has("t")) {
+        const t = params.get("t");
+        const secs = /^\d+$/.test(t) ? Number(t) : 0;
+        params.set("start", String(secs));
+        params.delete("t");
+      }
+      return `https://www.youtube.com/embed/${id}${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+    }
+
     return "";
   } catch {
     return "";
@@ -1121,6 +1238,7 @@ function AffiliateBanner({
 
 /* ===================================== 404 ===================================== */
 function NotFound() {
+  usePageMeta("Not found • WavePortals", "The page you requested does not exist.");
   return (
     <main>
       <p className="glow-error">
