@@ -832,7 +832,7 @@ const CITY_DB = {
         id: "isla-verde-beach",
         name: "Isla Verde Beachfront",
         blurb: "Resort-lined beach; premium foot traffic.",
-        videoUrl: "",
+        videoUrl: "https://www.youtube.com/watch?v=IFb8ffLZx3E",
         affiliateUrl: "",
       },
     ],
