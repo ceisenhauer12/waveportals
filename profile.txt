@@ -1,0 +1,8 @@
+function deploy {
+    param(
+        [string]$msg = "Deploy"
+    )
+    git add .
+    git commit -m $msg
+    git push origin main
+}
