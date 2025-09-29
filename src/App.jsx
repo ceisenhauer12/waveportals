@@ -567,7 +567,7 @@ const CITY_DB = {
         id: "the-strand",
         name: "The Strand Historic District",
         blurb: "Shops, museums, and cruise passenger flow.",
-        videoUrl: "",
+        videoUrl: "https://www.youtube.com/embed/QIBmMEbLtKw",
         affiliateUrl: "",
       },
     ],
