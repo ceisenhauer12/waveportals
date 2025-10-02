@@ -742,7 +742,8 @@ const CITY_DB = {
     tags: ["Navy", "Hospitality", "Family Traffic"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
-    lands: [
+     coords: [42.3173, -87.8376], // 👈 add this line (lat, lon)
+      lands: [
       {
         id: "rtc-ceremonial-drill-hall",
         name: "RTC Ceremonial Drill Hall",
