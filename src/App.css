@@ -169,3 +169,11 @@ body.perf .hero,
 body.perf .video-wrap { box-shadow: none !important; }
 body.perf .logo-img:hover,
 body.perf .ivy-logo:hover { filter: none !important; transform: none !important; }
+
+/* In App.css */
+.map-pin:hover .map-pin-tooltip { opacity: 1; }
+.map-pin:focus .map-pin-tooltip { opacity: 1; }
+
+:root {
+  --glow-color: #33ccff; /* match header font color */
+}

@@ -51,6 +51,35 @@ function usePageMeta(title, description) {
   }, [title, description]);
 }
 
+/* ===================== Route-specific OG/Twitter tags ===================== */
+function setOrCreate(selector, attrs) {
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = document.createElement("meta");
+    const match = selector.match(/\[(name|property)="([^"]+)"\]/);
+    if (match) el.setAttribute(match[1], match[2]);
+    document.head.appendChild(el);
+  }
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function useShareMeta({ title, description, url, image }) {
+  useEffect(() => {
+    document.title = title || "WavePortals";
+    setOrCreate('meta[name="description"]', { name: "description", content: description || "" });
+
+    setOrCreate('meta[property="og:title"]', { property: "og:title", content: title || "WavePortals" });
+    setOrCreate('meta[property="og:description"]', { property: "og:description", content: description || "" });
+    setOrCreate('meta[property="og:url"]', { property: "og:url", content: url || CANONICAL_ORIGIN + "/" });
+    if (image) setOrCreate('meta[property="og:image"]', { property: "og:image", content: image });
+
+    setOrCreate('meta[name="twitter:title"]', { name: "twitter:title", content: title || "WavePortals" });
+    setOrCreate('meta[name="twitter:description"]', { name: "twitter:description", content: description || "" });
+    if (image) setOrCreate('meta[name="twitter:image"]', { name: "twitter:image", content: image });
+  }, [title, description, url, image]);
+}
+
 /* ===================== Partner / referral link helper ===================== */
 const MYE_REF = ""; // <-- drop your myearthmeta referral code here when you get it
 const DEFAULT_UTM = {
@@ -385,7 +414,178 @@ function ScrollToTop() {
   return null;
 }
 
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
+/* ============================== Map banner (world map with pins) ============================== */
+function MapBanner() {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    function onResize() {
+      if (!ref.current) return;
+      const r = ref.current.getBoundingClientRect();
+      setSize({ w: r.width, h: r.height });
+    }
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const points = useMemo(() => {
+    return Object.entries(CITY_DB)
+      .filter(([, c]) => Array.isArray(c.coords) && c.coords.length === 2)
+      .map(([id, c]) => ({ id, title: c.title, coords: c.coords }));
+  }, []);
+
+  // Project lat/lon into the current container space
+  function project([lat, lon]) {
+    const x = ((lon + 180) / 360) * size.w;
+    const y = ((90 - lat) / 180) * size.h;
+    return [x, y];
+  }
+
+  return (
+    <section
+      className="glow-panel"
+      style={{
+        margin: "16px 0",
+        border: "1px solid #044966",
+        borderRadius: 12,
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          padding: "10px 12px",
+          borderBottom: "1px solid #044966",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span className="glow-text" style={{ fontWeight: 700 }}>
+          Explore on the map
+        </span>
+        <span className="muted" style={{ fontSize: ".9rem" }}>
+          Scroll to zoom, drag to move
+        </span>
+      </div>
+
+      <div
+        ref={ref}
+        style={{
+          width: "100%",
+          aspectRatio: "16 / 8",
+          background: "radial-gradient(ellipse at top, #012029, #000 70%)",
+          position: "relative",
+        }}
+      >
+        <TransformWrapper
+  initialScale={1}
+  minScale={1}
+  maxScale={6}
+  wheel={{ step: 0.2 }}
+  doubleClick={{ disabled: true }}
+  pinch={{ step: 0.3 }}
+>
+  {({ state }) => (
+    <TransformComponent>
+      <div
+        style={{
+          position: "relative",
+          width: size.w,
+          height: size.h,
+          transformOrigin: "0 0",
+        }}
+      >
+        <img
+          src="/images/maps/world-equirect.png"
+          alt="World map"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.9,
+            filter: "saturate(1.1) contrast(1.05)",
+            userSelect: "none",
+            pointerEvents: "none",
+          }}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+
+        {size.w > 0 &&
+          points.map((p) => {
+            const [x, y] = project(p.coords);
+            return (
+              <MapPin
+                key={p.id}
+                x={x}
+                y={y}
+                id={p.id}
+                title={p.title}
+                scale={state?.scale || 1}  // pass current zoom
+              />
+            );
+          })}
+      </div>
+    </TransformComponent>
+  )}
+</TransformWrapper>
+
+      </div>
+    </section>
+  );
+}
+
+function MapPin({ x, y, id, title, scale = 1 }) {
+  const base = 5; // smaller starting size
+  return (
+    <NavLink
+      to={`/city/${id}`}
+      title={title}
+      className="map-pin"
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        // move the element’s center to the projected coordinate, then counter-scale
+        transform: `translate(-50%, -50%) scale(${1 / scale})`,
+        transformOrigin: "50% 50%",
+        width: base,
+        height: base,
+        borderRadius: "50%",
+        background: "#33ccff", // match your glow text color
+        boxShadow: "0 0 4px #33ccff, 0 0 8px rgba(0,255,255,0.5)",
+        border: "1px solid #033",
+        cursor: "pointer",
+        zIndex: 2,
+      }}
+    />
+  );
+}
+
+
 /* ============================== App Shell ============================== */
+function GlobalAffiliateBanner() {
+  // site-wide holding banner; shows even with no href
+  return (
+    <div style={{ padding: "8px 16px", marginTop: 16 }}>
+      <AffiliateBanner
+        href="" // no affiliate yet → placeholder renders
+        imgSrc="/images/branding/waveportal-holder.svg"
+        ctaLabel="WavePortals"
+        alt="WavePortals placeholder banner"
+      />
+    </div>
+  );
+}
+
 export default function App() {
   useEffect(() => {
     const lowCores =
@@ -480,9 +680,12 @@ export default function App() {
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
 
+      {/* Site-wide holding banner (shows even without affiliate) */}
+      <GlobalAffiliateBanner />
+
       <footer
         className="glow-footer"
-        style={{ padding: "20px 32px", marginTop: 32, textAlign: "center" }}
+        style={{ padding: "20px 32px", marginTop: 16, textAlign: "center" }}
       >
         <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
           <span>© {new Date().getFullYear()} WavePortals — built by</span>
@@ -512,6 +715,7 @@ const CITY_DB = {
     tags: ["Navy", "Hospitality", "Family Traffic"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
+    coords: [42.3256, -87.8412],
     lands: [
       {
         id: "rtc-ceremonial-drill-hall",
@@ -534,6 +738,7 @@ const CITY_DB = {
     tags: ["UNESCO", "Casino", "Beethoven"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/101096994512716552136651044731009297320",
+    coords: [48.005, 16.2309],
     lands: [
       {
         id: "casino-baden",
@@ -559,6 +764,7 @@ const CITY_DB = {
     tags: ["ABBA", "Archipelago", "Pilgrimage"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/1981164889395449286388285702829111517",
+    coords: [59.325, 18.716],
     lands: [
       {
         id: "viggso-abba-cottage",
@@ -576,6 +782,7 @@ const CITY_DB = {
     tags: ["Old West", "Casinos", "Tourism"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/152919129197892936510323545052036063139",
+    coords: [44.3767, -103.729],
     lands: [
       {
         id: "saloon-no-10",
@@ -593,6 +800,7 @@ const CITY_DB = {
     tags: ["Choctaw", "Casino", "Resort"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/3102497881153330170438973525061606546437",
+    coords: [33.9934, -96.3971],
     lands: [
       {
         id: "choctaw-casino-resort",
@@ -617,6 +825,7 @@ const CITY_DB = {
     tags: ["Beaches", "Cruises", "Tourism"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/3796720729377725520913484692403980473937",
+    coords: [29.3013, -94.7977],
     lands: [
       {
         id: "the-strand",
@@ -637,6 +846,7 @@ const CITY_DB = {
     tags: ["Festival", "Music", "Culture"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/3010604377317538654113723260261144075391",
+    coords: [55.6419, 12.0804],
     lands: [
       {
         id: "roskilde-festival-grounds",
@@ -654,6 +864,7 @@ const CITY_DB = {
     tags: ["University", "Festival", "Tech"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/392837052132320215465070341702007820571",
+    coords: [46.7712, 23.6236],
     lands: [
       {
         id: "cluj-arena-untold",
@@ -671,6 +882,7 @@ const CITY_DB = {
     tags: ["Alsace", "Old Town", "Tourism"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/50561775335783996739267028111362698303",
+    coords: [48.079, 7.3585],
     lands: [
       {
         id: "little-venice",
@@ -688,6 +900,7 @@ const CITY_DB = {
     tags: ["University", "Research", "DC Area"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
+    coords: [38.9807, -76.9369],
     lands: [
       {
         id: "xfinity-center",
@@ -705,6 +918,7 @@ const CITY_DB = {
     tags: ["UNESCO", "Food", "Hanok"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/2887003481325296536527846355464262990798",
+    coords: [35.8242, 127.148],
     lands: [
       {
         id: "jeonju-hanok-village",
@@ -722,6 +936,7 @@ const CITY_DB = {
     tags: ["Tech", "Industry", "Culture"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/8620721531334460754235230511301466764",
+    coords: [49.8209, 18.2625],
     lands: [
       {
         id: "dolni-vitkovice",
@@ -739,6 +954,7 @@ const CITY_DB = {
     tags: ["Historic", "Economy", "Baden-Württemberg"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/292573116128912471666181257203360368220",
+    coords: [48.4914, 9.2043],
     lands: [
       {
         id: "marienkirche",
@@ -756,6 +972,7 @@ const CITY_DB = {
     tags: ["Tech", "Baseball", "Resort"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/50838639324434473282824924603582481238",
+    coords: [30.5083, -97.6789],
     lands: [
       {
         id: "dell-diamond",
@@ -773,6 +990,7 @@ const CITY_DB = {
     tags: ["Sports", "Concerts", "Growth"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/2117950553333762095295601353507265581",
+    coords: [30.5052, -97.8203],
     lands: [
       {
         id: "heb-center",
@@ -789,8 +1007,8 @@ const CITY_DB = {
     blurb:
       "Direct tie to DFW Airport; huge utility for travel and tourism.",
     tags: ["DFW", "Tourism", "Transit"],
-    // Fix: remove wrong Durant link until you have the real one
     earthmetaUrl: "https://app.earthmeta.ai/city/2471320665400692406924760230033371170721",
+    coords: [32.9343, -97.0781],
     lands: [
       {
         id: "gaylord-texan",
@@ -809,6 +1027,7 @@ const CITY_DB = {
     tags: ["Tech", "Creative", "Industrial"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
+    coords: [58.5877, 16.1924],
     lands: [
       {
         id: "visualization-center-c",
@@ -827,6 +1046,7 @@ const CITY_DB = {
     tags: ["SJU", "Resorts", "Tourism"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/955592025429317683616476297681314486268",
+    coords: [18.3808, -65.9574],
     lands: [
       {
         id: "isla-verde-beach",
@@ -842,9 +1062,15 @@ const CITY_DB = {
 /* =============================== HOME (tiles) =============================== */
 function Home() {
   usePageMeta(
-    "WavePortals • Cities & Lands of IceManWave",
-    "Browse WavePortals’ EarthMeta cities, lands, live cams, casinos, and cultural anchors."
+    "WavePortals • Featured Cities of IceManWave",
+    "Browse featured EarthMeta cities, live cams, casinos, and cultural anchors."
   );
+  useShareMeta({
+    title: "WavePortals • Featured Cities of IceManWave",
+    description: "Explore featured cities with live cams and portals into EarthMeta.",
+    url: `${CANONICAL_ORIGIN}/`,
+    image: `${CANONICAL_ORIGIN}/images/branding/wave_portal_2.jpg`,
+  });
 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("az");
@@ -870,7 +1096,7 @@ function Home() {
         className="glow-text"
         style={{ marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}
       >
-        Cities and Lands of IceManWave
+        Featured Cities of IceManWave
         <img
           src="/images/branding/icemanwave-logo.png"
           alt="IceManWave logo"
@@ -878,10 +1104,13 @@ function Home() {
         />
       </h2>
 
+      {/* NEW: world map banner */}
+      <MapBanner />
+
       <div className="toolbar">
         <input
           className="input"
-          placeholder="Search cities, blurbs, tags…"
+          placeholder="Search featured cities, blurbs, tags…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search cities"
@@ -952,6 +1181,12 @@ function CityDetail() {
   if (!city) return <Navigate to="/404" replace />;
 
   usePageMeta(`${city.title} • WavePortals`, city.blurb);
+  useShareMeta({
+    title: `${city.title} • WavePortals`,
+    description: city.blurb,
+    url: `${CANONICAL_ORIGIN}/city/${id}`,
+    image: `${CANONICAL_ORIGIN}${city.heroImg || `/images/cities/${id}.jpg`}`,
+  });
 
   return (
     <main>
@@ -1049,6 +1284,12 @@ function LandDetail() {
   const isRTC = land.channelId === "UCZuVv_Qnvp-2hIqwBIoq5Aw";
 
   usePageMeta(`${land.name} • ${city.title} • WavePortals`, land.blurb);
+  useShareMeta({
+    title: `${land.name} • ${city.title} • WavePortals`,
+    description: land.blurb,
+    url: `${CANONICAL_ORIGIN}/city/${id}/land/${landId}`,
+    image: `${CANONICAL_ORIGIN}${city.heroImg || `/images/cities/${id}.jpg`}`,
+  });
 
   return (
     <main>
@@ -1122,15 +1363,12 @@ function LandDetail() {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        {land.affiliateUrl ? (
-          <AffiliateBanner
-            href={land.affiliateUrl}
-            imgSrc="/images/branding/waveportal-holder.svg"
-            ctaLabel="Launch"
-          />
-        ) : (
-          <span className="muted">Affiliate spot (add your link in CITY_DB)</span>
-        )}
+        {/* Always render banner; becomes clickable if affiliateUrl is set */}
+        <AffiliateBanner
+          href={land.affiliateUrl}
+          imgSrc="/images/branding/waveportal-holder.svg"
+          ctaLabel={land.affiliateUrl ? "Launch" : "WavePortals"}
+        />
       </div>
     </main>
   );
@@ -1212,17 +1450,8 @@ function AffiliateBanner({
   ctaLabel = "Launch",
   alt = "WavePortal banner",
 }) {
-  if (!href) return null;
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer nofollow sponsored"
-      className="glow-panel glow-banner"
-      style={{ maxWidth: 980, margin: "16px auto 0" }}
-      aria-label={ctaLabel}
-      title={ctaLabel}
-    >
+  const bannerInner = (
+    <>
       <img
         src={imgSrc}
         alt={alt}
@@ -1232,6 +1461,38 @@ function AffiliateBanner({
         }}
       />
       <span className="btn btn-primary cta">{ctaLabel}</span>
+    </>
+  );
+
+  const commonStyle = { maxWidth: 980, margin: "16px auto 0" };
+
+  // If no href, render a non-clickable placeholder so the banner always shows.
+  if (!href) {
+    return (
+      <div
+        className="glow-panel glow-banner"
+        style={commonStyle}
+        role="img"
+        aria-label={alt}
+        title={alt}
+      >
+        {bannerInner}
+      </div>
+    );
+  }
+
+  // Clickable affiliate version
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow sponsored"
+      className="glow-panel glow-banner"
+      style={commonStyle}
+      aria-label={ctaLabel}
+      title={ctaLabel}
+    >
+      {bannerInner}
     </a>
   );
 }
@@ -1239,6 +1500,12 @@ function AffiliateBanner({
 /* ===================================== 404 ===================================== */
 function NotFound() {
   usePageMeta("Not found • WavePortals", "The page you requested does not exist.");
+  useShareMeta({
+    title: "Not found • WavePortals",
+    description: "The page you requested does not exist.",
+    url: `${CANONICAL_ORIGIN}/404`,
+    image: `${CANONICAL_ORIGIN}/images/branding/wave_portal_2.jpg`,
+  });
   return (
     <main>
       <p className="glow-error">

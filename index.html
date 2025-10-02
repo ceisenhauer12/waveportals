@@ -9,7 +9,7 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#00141a" />
 
-    <!-- Base title/description (route-level overrides via usePageMeta) -->
+    <!-- Base title/description (route-level overrides via useShareMeta/usePageMeta) -->
     <title>WavePortals</title>
     <meta
       name="description"
@@ -21,11 +21,7 @@
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      rel="preconnect"
-      href="https://fonts.gstatic.com"
-      crossorigin
-    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
       rel="stylesheet"
@@ -33,17 +29,8 @@
 
     <!-- Favicons / App Icons -->
     <link rel="icon" href="/favicon.ico?v=6" sizes="any" />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/favicon-32x32.png?v=6"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/apple-touch-icon.png?v=6"
-    />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=6" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=6" />
 
     <!-- Preconnects for faster YouTube embeds -->
     <link rel="preconnect" href="https://www.youtube.com" />
@@ -51,15 +38,14 @@
     <link rel="preconnect" href="https://s.ytimg.com" />
     <link rel="preconnect" href="https://www.google.com" />
 
-    <!-- Social / Sharing -->
+    <!-- Social / Sharing (generic fallbacks; route-specific tags set at runtime) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="WavePortals" />
     <meta property="og:title" content="WavePortals" />
     <meta
       property="og:description"
-      content="Thursdays 9:30 AM CT – RTC Graduation livestream plus curated city portals."
+      content="Explore curated cities and lands with live cams and portals into EarthMeta."
     />
-    <!-- Use a real hero image for rich link previews -->
     <meta
       property="og:image"
       content="https://www.waveportals.com/images/branding/wave_portal_2.jpg"
@@ -70,7 +56,7 @@
     <meta name="twitter:title" content="WavePortals" />
     <meta
       name="twitter:description"
-      content="Thursdays 9:30 AM CT – RTC Graduation livestream plus curated city portals."
+      content="Explore curated cities and lands with live cams and portals into EarthMeta."
     />
     <meta
       name="twitter:image"
@@ -81,9 +67,7 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
   </head>
   <body style="margin:0">
-    <noscript
-      >WavePortals requires JavaScript. (I know, shocking.)</noscript
-    >
+    <noscript>WavePortals requires JavaScript. (I know, shocking.)</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
