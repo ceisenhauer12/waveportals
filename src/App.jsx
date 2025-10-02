@@ -102,6 +102,7 @@ function buildPartnerLink(raw) {
 }
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
+/* LIVE badge window: Thursday 9:00–11:00 AM CT (covers ceremony ~9:00–10:45) */
 function isInCTLiveWindow() {
   const now = new Date();
   const chicago = new Date(
@@ -111,8 +112,8 @@ function isInCTLiveWindow() {
   const h = chicago.getHours();
   const m = chicago.getMinutes();
   if (d !== 4) return false;
-  const afterStart = h > 9 || (h === 9 && m >= 30);
-  const beforeEnd = h < 12 || (h === 12 && m <= 30);
+  const afterStart = h > 8 || (h === 8 && m >= 59) || (h === 9); // >= ~8:59 (for safety)
+  const beforeEnd = h < 10 || (h === 10 && m <= 45);
   return afterStart && beforeEnd;
 }
 
@@ -149,8 +150,8 @@ function LiveBadge() {
   );
 }
 
-/* ===================== Countdown to next Thursday 9:30 CT ===================== */
-function nextThursdayAt0930CT() {
+/* ===================== Countdown to next Thursday 9:00 CT ===================== */
+function nextThursdayAt0900CT() {
   const now = new Date();
   const chicagoNow = new Date(
     now.toLocaleString("en-US", { timeZone: "America/Chicago" })
@@ -158,17 +159,17 @@ function nextThursdayAt0930CT() {
   const d = new Date(chicagoNow);
   const day = d.getDay(); // 0..6 (Thu=4)
   const isThu = day === 4;
-  const after1230 =
-    d.getHours() > 12 || (d.getHours() === 12 && d.getMinutes() > 30);
+  const after1100 =
+    d.getHours() > 11 || (d.getHours() === 11 && d.getMinutes() > 0);
 
   let addDays;
-  if (isThu && !after1230) addDays = 0;
+  if (isThu && !after1100) addDays = 0;
   else {
     const delta = (4 - day + 7) % 7;
     addDays = delta === 0 ? 7 : delta;
   }
   d.setDate(d.getDate() + addDays);
-  d.setHours(9, 30, 0, 0);
+  d.setHours(9, 0, 0, 0);
 
   return new Date(
     new Date(d.toLocaleString("en-US", { timeZone: "America/Chicago" }))
@@ -177,7 +178,7 @@ function nextThursdayAt0930CT() {
 
 function useCountdownToNextRTC() {
   const [now, setNow] = useState(Date.now());
-  const target = useMemo(() => nextThursdayAt0930CT(), []);
+  const target = useMemo(() => nextThursdayAt0900CT(), []);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -197,7 +198,7 @@ function CountdownToRTC() {
   return (
     <div className="affiliate" style={{ marginTop: 12 }}>
       <div className="muted" style={{ marginBottom: 6 }}>
-        Next RTC Graduation Live stream (Thu 9:30 AM CT) in:
+        Next RTC Graduation Live stream (Thu 9:00 AM CT) in:
       </div>
       <div className="glow-text" style={{ fontWeight: 700 }}>
         {days}d {hours}h {minutes}m {seconds}s
@@ -211,7 +212,7 @@ function RTCScheduleNote() {
   return (
     <div className="affiliate" style={{ marginTop: 12 }}>
       <div className="muted">
-        RTC Graduation livestream: <strong>Thursdays, 9:30 AM CT</strong>.
+        RTC Graduation livestream: <strong>Thursdays, 9:00 AM CT</strong>.
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
         If the player shows “unavailable,” it’s before showtime or there’s no
@@ -483,61 +484,60 @@ function MapBanner() {
         }}
       >
         <TransformWrapper
-  initialScale={1}
-  minScale={1}
-  maxScale={6}
-  wheel={{ step: 0.2 }}
-  doubleClick={{ disabled: true }}
-  pinch={{ step: 0.3 }}
->
-  {({ state }) => (
-    <TransformComponent>
-      <div
-        style={{
-          position: "relative",
-          width: size.w,
-          height: size.h,
-          transformOrigin: "0 0",
-        }}
-      >
-        <img
-          src="/images/maps/world-equirect.png"
-          alt="World map"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.9,
-            filter: "saturate(1.1) contrast(1.05)",
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
+          initialScale={1}
+          minScale={1}
+          maxScale={6}
+          wheel={{ step: 0.2 }}
+          doubleClick={{ disabled: true }}
+          pinch={{ step: 0.3 }}
+        >
+          {({ state }) => (
+            <TransformComponent>
+              <div
+                style={{
+                  position: "relative",
+                  width: size.w,
+                  height: size.h,
+                  transformOrigin: "0 0",
+                }}
+              >
+                <img
+                  src="/images/maps/world-equirect.png"
+                  alt="World map"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    opacity: 0.9,
+                    filter: "saturate(1.1) contrast(1.05)",
+                    userSelect: "none",
+                    pointerEvents: "none",
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
 
-        {size.w > 0 &&
-          points.map((p) => {
-            const [x, y] = project(p.coords);
-            return (
-              <MapPin
-                key={p.id}
-                x={x}
-                y={y}
-                id={p.id}
-                title={p.title}
-                scale={state?.scale || 1}  // pass current zoom
-              />
-            );
-          })}
-      </div>
-    </TransformComponent>
-  )}
-</TransformWrapper>
-
+                {size.w > 0 &&
+                  points.map((p) => {
+                    const [x, y] = project(p.coords);
+                    return (
+                      <MapPin
+                        key={p.id}
+                        x={x}
+                        y={y}
+                        id={p.id}
+                        title={p.title}
+                        scale={state?.scale || 1} // pass current zoom
+                      />
+                    );
+                  })}
+              </div>
+            </TransformComponent>
+          )}
+        </TransformWrapper>
       </div>
     </section>
   );
@@ -560,7 +560,7 @@ function MapPin({ x, y, id, title, scale = 1 }) {
         width: base,
         height: base,
         borderRadius: "50%",
-        background: "#33ccff", // match your glow text color
+        background: "#33ccff",
         boxShadow: "0 0 4px #33ccff, 0 0 8px rgba(0,255,255,0.5)",
         border: "1px solid #033",
         cursor: "pointer",
@@ -570,6 +570,33 @@ function MapPin({ x, y, id, title, scale = 1 }) {
   );
 }
 
+/* ============================== Tiny Markdown -> HTML ============================== */
+/* Supports: ### headings, **bold**, links [text](url), bullet lists '-', line breaks */
+function mdToHtml(md = "") {
+  if (!md) return "";
+  // escape HTML
+  let h = md.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+  // headings ### 
+  h = h.replace(/^### (.*)$/gm, "<h3>$1</h3>");
+  // bold **text**
+  h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  // links [text](url)
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // bullet lists: lines starting with "- " or •
+  h = h.replace(/^(?:- |\u2022 )(.*)$/gm, "<li>$1</li>");
+  h = h.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>").replace(/<\/ul>\s*<ul>/g, ""); // merge adjacent ULs
+  // line breaks → paragraphs (skip if block is h3 or ul)
+  h = h
+    .split(/\n{2,}/)
+    .map((block) => {
+      if (/^\s*<h3>/.test(block) || /^\s*<ul>/.test(block)) return block;
+      const withBr = block.replace(/\n/g, "<br/>");
+      return withBr.trim() ? `<p>${withBr}</p>` : "";
+    })
+    .join("\n");
+  return h;
+}
 
 /* ============================== App Shell ============================== */
 function GlobalAffiliateBanner() {
@@ -715,7 +742,6 @@ const CITY_DB = {
     tags: ["Navy", "Hospitality", "Family Traffic"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
-    coords: [42.3256, -87.8412],
     lands: [
       {
         id: "rtc-ceremonial-drill-hall",
@@ -727,6 +753,53 @@ const CITY_DB = {
         fallbackVideoUrl: "https://www.youtube.com/watch?v=7l7a1uigRg4",
         affiliateUrl:
           "https://www.navygear.com/?utm_source=waveportals&utm_medium=affiliate&utm_campaign=rtc",
+      },
+      {
+        id: "recruit-family-welcome-center",
+        name: "Recruit Family Welcome Center",
+        blurb:
+          "Off-base ticketing and info hub for Navy graduation families. Pick up tickets, verify access, and plan your visit.",
+        videoUrl: "",
+        affiliateUrl: "",
+        info: `
+### Recruit Family Welcome Center – Graduation Guide
+
+**Step 1: Security Access Form**
+- All guests (age 3+) must be listed (max 4).  
+- Submit by **Monday of graduation week** or no access.  
+- [Online form link](https://forms.osi.apps.mil/Pages/ResponsePage.aspx?id=AD4z43fIh0u2rUXpQt4XUOyouc5PxTJBvrdVD4UdnLVUOFc2TlhZWVRBRU82Ujk1U1U3ODJNMFdMUCQlQCN0PWcu)  
+- Only your recruit can update the guest list.  
+
+**Step 2: Travel Planning**
+- Hotels/transport: book your own.  
+- Resources: [NavyLifeGL.com](https://www.navylifegl.com/rtc)  
+
+**Step 3: Pick Up Tickets (Required)**
+- Location: Navy Exchange Burkey Mall, 2650 Green Bay Rd, North Chicago, IL 60088.  
+- Hours:  
+  - Day before: 10:00 AM – 7:30 PM  
+  - Day of: 5:30 AM – 8:30 AM  
+- Valid REAL ID or passport required. No ticket = no base entry.  
+
+**Step 4: Graduation Day (9:00–10:45 AM)**
+- 6:30 AM – Gates + drill hall open  
+- 9:00 AM – Ceremony begins (doors close, no late entry)  
+- 10:45 AM – Ceremony ends  
+
+**Base Access**
+- Adults: photo ID. Minors: school ID, permit, or birth certificate.  
+- Driving: license, registration, insurance/rental agreement, ticket.  
+- Pedestrians: Gate 8 (by METRA).  
+
+**Security**
+- Allowed: small purse, camera bag, stroller, wheelchair/walker.  
+- Not allowed: backpacks, large bags, flowers, signs, weapons, alcohol/drugs.  
+- All people, bags, and vehicles subject to search.  
+
+**After Graduation**
+- Many Sailors transfer immediately to “A” school.  
+- Ask your recruit directly about liberty/departure.  
+      `,
       },
     ],
   },
@@ -1335,6 +1408,16 @@ function LandDetail() {
         </div>
       )}
 
+      {/* --- Recruit Family Guide (if provided) --- */}
+      {land.info ? (
+        <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+          <div
+            className="prose"
+            dangerouslySetInnerHTML={{ __html: mdToHtml(land.info) }}
+          />
+        </section>
+      ) : null}
+
       <div className="btn-row" style={{ marginTop: 12 }}>
         {isRTC && (
           <a
@@ -1346,6 +1429,18 @@ function LandDetail() {
             Watch on YouTube
           </a>
         )}
+
+        {/* Link to Welcome Center if we're on the Drill Hall page */}
+        {land.id === "rtc-ceremonial-drill-hall" &&
+          CITY_DB[id]?.lands?.some((l) => l.id === "recruit-family-welcome-center") && (
+            <NavLink
+              to={`/city/${id}/land/recruit-family-welcome-center`}
+              className="btn btn-primary"
+            >
+              Recruit Family Welcome Center
+            </NavLink>
+          )}
+
         <NavLink to={`/city/${id}`} className="btn btn-quiet">
           Back to lands
         </NavLink>
