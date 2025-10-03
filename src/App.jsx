@@ -764,7 +764,7 @@ const CITY_DB = {
         affiliateUrl: "",
         info: `
 ### Recruit Family Welcome Center – Graduation Guide
-https://www.google.com/maps/d/edit?mid=1eQOR3vRpRiCsL9x3nszPWiVi34tysLc&usp=sharing
+Information from [source:](https://www.bootcamp.navy.mil/Graduation/)
 
 **Step 1: Security Access Form**
 - All guests (age 3+) must be listed (max 4).  
@@ -784,7 +784,7 @@ https://www.google.com/maps/d/edit?mid=1eQOR3vRpRiCsL9x3nszPWiVi34tysLc&usp=shar
 - Valid REAL ID or passport required. No ticket = no base entry.  
 
 **Step 4: Graduation Day (9:00–10:45 AM)**
-- 6:30 AM – Gates + drill hall open  
+- 6:30 AM – Gates + drill hall open (if driving arrive extra early recommended) 
 - 9:00 AM – Ceremony begins (doors close, no late entry)  
 - 10:45 AM – Ceremony ends  
 
