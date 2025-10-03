@@ -764,6 +764,7 @@ const CITY_DB = {
         affiliateUrl: "",
         info: `
 ### Recruit Family Welcome Center – Graduation Guide
+https://www.google.com/maps/d/edit?mid=1eQOR3vRpRiCsL9x3nszPWiVi34tysLc&usp=sharing
 
 **Step 1: Security Access Form**
 - All guests (age 3+) must be listed (max 4).  
@@ -1409,6 +1410,31 @@ function LandDetail() {
         </div>
       )}
 
+      {/* --- Map embed — Welcome Center ONLY --- */}
+      {land.id === "recruit-family-welcome-center" && (
+        <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+          <h3>Map: Welcome Center, Drill Hall & Gate 8</h3>
+          <iframe
+            src="https://www.google.com/maps/d/embed?mid=1eQOR3vRpRiCsL9x3nszPWiVi34tysLc&ehbc=2E312F"
+            width="100%"
+            height="400"
+            style={{ border: 0, borderRadius: "12px", boxShadow: "0 0 15px rgba(0, 255, 255, 0.4)" }}
+            allowFullScreen
+            loading="lazy"
+          />
+          <div className="btn-row" style={{ marginTop: 12 }}>
+            <a
+              href="https://www.google.com/maps/d/edit?mid=1eQOR3vRpRiCsL9x3nszPWiVi34tysLc&usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Open Interactive Map
+            </a>
+          </div>
+        </section>
+      )}
+
       {/* --- Recruit Family Guide (if provided) --- */}
       {land.info ? (
         <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
@@ -1469,6 +1495,7 @@ function LandDetail() {
     </main>
   );
 }
+
 
 /* ============================== Utility: watch → embed ============================== */
 function toEmbedUrl(url) {
