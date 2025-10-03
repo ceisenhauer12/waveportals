@@ -9,6 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import "./App.css";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
@@ -105,17 +106,17 @@ function buildPartnerLink(raw) {
 /* LIVE badge window: Thursday 9:00–11:00 AM CT (covers ceremony ~9:00–10:45) */
 function isInCTLiveWindow() {
   const now = new Date();
-  const chicago = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/Chicago" })
-  );
+  const chicago = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
   const d = chicago.getDay(); // Thu = 4
   const h = chicago.getHours();
   const m = chicago.getMinutes();
   if (d !== 4) return false;
-  const afterStart = h > 8 || (h === 8 && m >= 59) || (h === 9); // >= ~8:59 (for safety)
-  const beforeEnd = h < 10 || (h === 10 && m <= 45);
+
+  const afterStart = h > 9 || (h === 9 && m >= 0);   // >= 9:00
+  const beforeEnd  = h < 10 || (h === 10 && m <= 45); // <= 10:45
   return afterStart && beforeEnd;
 }
+
 
 function useIsInCTLiveWindow() {
   const [inWindow, setInWindow] = useState(isInCTLiveWindow());
@@ -415,8 +416,6 @@ function ScrollToTop() {
   return null;
 }
 
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
 /* ============================== Map banner (world map with pins) ============================== */
 function MapBanner() {
   const ref = useRef(null);
@@ -606,7 +605,7 @@ function GlobalAffiliateBanner() {
       <AffiliateBanner
         href="" // no affiliate yet → placeholder renders
         imgSrc="/images/branding/waveportal-holder.svg"
-        ctaLabel="WavePortals"
+        ctaLabel="Launch"
         alt="WavePortals placeholder banner"
       />
     </div>
@@ -705,6 +704,7 @@ export default function App() {
         <Route path="/city/:id/land/:landId" element={<LandDetail />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
+        <Route path="/city/:id/affiliates" element={<CityAffiliates />} />
       </Routes>
 
       {/* Site-wide holding banner (shows even without affiliate) */}
@@ -764,7 +764,7 @@ const CITY_DB = {
         affiliateUrl: "",
         info: `
 ### Recruit Family Welcome Center – Graduation Guide
-Information from [source:](https://www.bootcamp.navy.mil/Graduation/)
+Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
 
 **Step 1: Security Access Form**
 - All guests (age 3+) must be listed (max 4).  
@@ -1309,6 +1309,10 @@ function CityDetail() {
         <NavLink to="/" className="btn btn-quiet">
           ← All cities
         </NavLink>
+        <NavLink to={`/city/${id}/affiliates`} className="btn btn-primary">
+  Affiliates & Resources
+</NavLink>
+
         {city.earthmetaUrl ? (
           <a
             href={buildPartnerLink(city.earthmetaUrl)}
@@ -1345,6 +1349,144 @@ function CityDetail() {
     </main>
   );
 }
+
+/* ========================= CITY AFFILIATES (generic per-city portal) ========================= */
+function CityAffiliates() {
+  const { id } = useParams();
+  const city = CITY_DB[id];
+  if (!city) return <Navigate to="/404" replace />;
+
+  // Optional fields supported on each city in CITY_DB (all are optional):
+  // - city.affiliatesMapUrl: string (Google My Maps or standard map embed URL)
+  // - city.featuredPartner: { label, href, imgSrc, ctaLabel }
+  // - city.affiliates: Array<{ category: string, items: Array<{ name, description?, href, imgSrc? }> }>
+
+  usePageMeta(`${city.title} • Affiliates & Resources • WavePortals`, city.blurb);
+  useShareMeta({
+    title: `${city.title} • Affiliates & Resources • WavePortals`,
+    description: `Curated partners, lodging, gear, and services for ${city.title}.`,
+    url: `${CANONICAL_ORIGIN}/city/${id}/affiliates`,
+    image: `${CANONICAL_ORIGIN}${city.heroImg || `/images/cities/${id}.jpg`}`,
+  });
+
+  const mapUrl = city.affiliatesMapUrl || ""; // if provided, we’ll embed it
+  const featured = city.featuredPartner; // single hero partner (optional)
+  const groups = Array.isArray(city.affiliates) ? city.affiliates : [];
+
+  return (
+    <main>
+      <p>
+        <NavLink
+          to={`/city/${id}`}
+          className="glow-text glow-hover"
+          style={{ textDecoration: "none" }}
+        >
+          ← Back to {city.title}
+        </NavLink>
+      </p>
+
+      <h1 className="glow-text" style={{ marginTop: 0 }}>
+        Affiliates & Resources
+      </h1>
+      <p className="muted">
+        Curated partners, lodging, gear, and services to make your visit smoother. We keep this page
+        tidy—useful links only, no banner salad. to request your banner reach out at contact@waveportals.com
+      </p>
+
+      {/* Featured partner (optional) */}
+      {featured?.href ? (
+        <section style={{ marginTop: 16 }}>
+          <AffiliateBanner
+            href={featured.href}
+            imgSrc={featured.imgSrc || "/images/branding/waveportal-holder.svg"}
+            ctaLabel={featured.ctaLabel || "Shop / Learn More"}
+            alt={featured.label || "Featured partner"}
+          />
+        </section>
+      ) : null}
+
+      {/* Map-driven section (optional) */}
+      {mapUrl ? (
+        <section className="glow-panel" style={{ marginTop: 16, padding: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Interactive Map</h3>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Tap a pin to open the official site (some links may include our partner tracking).
+          </p>
+          <div className="video-wrap" style={{ marginTop: 12, aspectRatio: "16 / 9" }}>
+            <iframe
+              src={mapUrl}
+              title={`${city.title} resources map`}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{ border: 0, width: "100%", height: "100%", borderRadius: 12 }}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {/* Category groups */}
+      {groups.length ? (
+        groups.map((g) => (
+          <section key={g.category} style={{ marginTop: 16 }}>
+            <h3 className="glow-text" style={{ marginBottom: 8 }}>{g.category}</h3>
+            <div className="card-list">
+              {g.items?.map((it) => (
+                <div key={it.name} className="card">
+                  {it.imgSrc ? (
+                    <div
+                      style={{
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        border: "1px solid #044966",
+                        marginBottom: 10,
+                      }}
+                    >
+                      <img
+                        src={it.imgSrc}
+                        alt={it.name}
+                        loading="lazy"
+                        style={{ width: "100%", height: 140, objectFit: "cover" }}
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    </div>
+                  ) : null}
+                  <h4 style={{ marginTop: 0 }}>{it.name}</h4>
+                  {it.description ? (
+                    <div className="muted clamp-2" style={{ marginBottom: 8 }}>
+                      {it.description}
+                    </div>
+                  ) : null}
+                  <div className="btn-row">
+                    <a
+                      href={buildPartnerLink(it.href)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                    >
+                      {g.category.toLowerCase().includes("hotel") ? "Book Now" : "Open"}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))
+      ) : (
+        <section className="glow-panel" style={{ marginTop: 16, padding: 16 }}>
+          <p className="muted" style={{ margin: 0 }}>
+            No resources added here yet. As we onboard partners, you’ll see hotels, attractions,
+            and gear show up—clean, organized, and map-first.
+          </p>
+        </section>
+      )}
+
+      {/* Global banner stays at bottom to funnel to your broader portal if desired */}
+      
+    </main>
+  );
+}
+
 
 /* ================= LAND DETAIL (RTC live-or-replay; embeds for others) ================= */
 function LandDetail() {
@@ -1411,29 +1553,32 @@ function LandDetail() {
       )}
 
       {/* --- Map embed — Welcome Center ONLY --- */}
-      {land.id === "recruit-family-welcome-center" && (
-        <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
-          <h3>Map: Welcome Center, Drill Hall & Gate 8</h3>
-          <iframe
-            src="https://www.google.com/maps/d/embed?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&ehbc=2E312F"
-            width="100%"
-            height="400"
-            style={{ border: 0, borderRadius: "12px", boxShadow: "0 0 15px rgba(0, 255, 255, 0.4)" }}
-            allowFullScreen
-            loading="lazy"
-          />
-          <div className="btn-row" style={{ marginTop: 12 }}>
-            <a
-              href="https://www.google.com/maps/d/edit?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
-              Open Interactive Map
-            </a>
-          </div>
-        </section>
-      )}
+{land.id === "recruit-family-welcome-center" && (
+  <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+    <h3>Map: Welcome Center, Drill Hall & Gate 8</h3>
+    <iframe
+      src="https://www.google.com/maps/d/embed?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&ehbc=2E312F"
+      title="North Chicago graduation locations map"
+      width="100%"
+      height="400"
+      style={{ border: 0, borderRadius: "12px", boxShadow: "0 0 15px rgba(0, 255, 255, 0.4)" }}
+      allowFullScreen
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+    />
+    <div className="btn-row" style={{ marginTop: 12 }}>
+      <a
+        href="https://www.google.com/maps/d/edit?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&usp=sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-primary"
+      >
+        Open Interactive Map
+      </a>
+    </div>
+  </section>
+)}
+
 
       {/* --- Recruit Family Guide (if provided) --- */}
       {land.info ? (
@@ -1484,14 +1629,7 @@ function LandDetail() {
         ) : null}
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        {/* Always render banner; becomes clickable if affiliateUrl is set */}
-        <AffiliateBanner
-          href={land.affiliateUrl}
-          imgSrc="/images/branding/waveportal-holder.svg"
-          ctaLabel={land.affiliateUrl ? "Launch" : "WavePortals"}
-        />
-      </div>
+      
     </main>
   );
 }
