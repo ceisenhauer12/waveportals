@@ -1,0 +1,182 @@
+[33mcommit ae48586eeb64de8dbbdb3126a0478f2039de59ba[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrelease/rick-egg[m[33m)[m
+Author: Your Name <ceisenhauer1@gmail.com>
+Date:   Fri Oct 3 23:23:56 2025 -0500
+
+    Add RickEggModal via portal; map pin parity; modal sizing; a11y focus mgmt
+
+[1mdiff --git a/src/App.jsx b/src/App.jsx[m
+[1mindex ec4d041..fa800b0 100644[m
+[1m--- a/src/App.jsx[m
+[1m+++ b/src/App.jsx[m
+[36m@@ -11,6 +11,7 @@[m [mimport {[m
+ import "./App.css";[m
+ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";[m
+ [m
+[32m+[m
+ /* ===================== Canonical <link> ===================== */[m
+ const CANONICAL_ORIGIN = "https://www.waveportals.com";[m
+ function CanonicalTag() {[m
+[36m@@ -82,7 +83,7 @@[m [mfunction useShareMeta({ title, description, url, image }) {[m
+ }[m
+ [m
+ /* ===================== Partner / referral link helper ===================== */[m
+[31m-const MYE_REF = ""; // <-- drop your myearthmeta referral code here when you get it[m
+[32m+[m[32mconst MYE_REF = "EM20252B6414"; // <-- drop your myearthmeta referral code here when you get it[m
+ const DEFAULT_UTM = {[m
+   utm_source: "waveportals",[m
+   utm_medium: "site",[m
+[36m@@ -416,11 +417,198 @@[m [mfunction ScrollToTop() {[m
+   return null;[m
+ }[m
+ [m
+[32m+[m[32m/* ============================== Map banner (world map with pins) ============================== */[m
+[32m+[m[32mimport { createPortal } from "react-dom";[m
+[32m+[m
+[32m+[m[32m// ---------- One-time YouTube IFrame API loader ----------[m
+[32m+[m[32mlet __ytApiPromise;[m
+[32m+[m[32mfunction loadYouTubeAPI() {[m
+[32m+[m[32m  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);[m
+[32m+[m[32m  if (__ytApiPromise) return __ytApiPromise;[m
+[32m+[m[32m  __ytApiPromise = new Promise((resolve) => {[m
+[32m+[m[32m    const tag = document.createElement("script");[m
+[32m+[m[32m    tag.src = "https://www.youtube.com/iframe_api";[m
+[32m+[m[32m    document.head.appendChild(tag);[m
+[32m+[m[32m    window.onYouTubeIframeAPIReady = () => resolve(window.YT);[m
+[32m+[m[32m  });[m
+[32m+[m[32m  return __ytApiPromise;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m// Rick modal rendered via portal (with a11y focus management)[m
+[32m+[m[32mfunction RickEggModal({ open, onClose }) {[m
+[32m+[m[32m  const containerId = "rick-yt-player"; // unique & stable[m
+[32m+[m[32m  const playerRef = useRef(null);[m
+[32m+[m[41m  [m
+[32m+[m[32m// Prevent page scroll while modal is open[m
+[32m+[m[32museEffect(() => {[m
+[32m+[m[32m  if (!open) return;[m
+[32m+[m[32m  const prev = document.body.style.overflow;[m
+[32m+[m[32m  document.body.style.overflow = "hidden";[m
+[32m+[m[32m  return () => {[m
+[32m+[m[32m    document.body.style.overflow = prev;[m
+[32m+[m[32m  };[m
+[32m+[m[32m}, [open]);[m
+[32m+[m
+[32m+[m[32m  // --- A11y: focus management ---[m
+[32m+[m[32m  const closeBtnRef = useRef(null);[m
+[32m+[m[32m  const prevFocusRef = useRef(null);[m
+[32m+[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    if (!open) return;[m
+[32m+[m[32m    // remember who had focus[m
+[32m+[m[32m    prevFocusRef.current = document.activeElement;[m
+[32m+[m[32m    // focus the Close button after mount[m
+[32m+[m[32m    const id = setTimeout(() => closeBtnRef.current?.focus(), 0);[m
+[32m+[m[32m    return () => {[m
+[32m+[m[32m      clearTimeout(id);[m
+[32m+[m[32m      // restore focus when closing[m
+[32m+[m[32m      if (prevFocusRef.current && typeof prevFocusRef.current.focus === "function") {[m
+[32m+[m[32m        prevFocusRef.current.focus();[m
+[32m+[m[32m      }[m
+[32m+[m[32m    };[m
+[32m+[m[32m  }, [open]);[m
+[32m+[m
+[32m+[m[32m  // ESC to close[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    if (!open) return;[m
+[32m+[m[32m    const onKey = (e) => e.key === "Escape" && onClose();[m
+[32m+[m[32m    window.addEventListener("keydown", onKey);[m
+[32m+[m[32m    return () => window.removeEventListener("keydown", onKey);[m
+[32m+[m[32m  }, [open, onClose]);[m
+[32m+[m
+[32m+[m[32m  // Create / destroy player[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    if (!open) return;[m
+[32m+[m
+[32m+[m[32m    let destroyed = false;[m
+[32m+[m[32m    loadYouTubeAPI().then((YT) => {[m
+[32m+[m[32m      if (destroyed) return;[m
+[32m+[m[32m      playerRef.current = new YT.Player(containerId, {[m
+[32m+[m[32m        videoId: "dQw4w9WgXcQ",[m
+[32m+[m[32m        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },[m
+[32m+[m[32m        events: {[m
+[32m+[m[32m          onReady: (e) => {[m
+[32m+[m[32m            try {[m
+[32m+[m[32m              e.target.mute();[m
+[32m+[m[32m              e.target.playVideo();[m
+[32m+[m[32m              setTimeout(() => {[m
+[32m+[m[32m                try { e.target.setVolume(25); e.target.unMute(); } catch {}[m
+[32m+[m[32m              }, 0);[m
+[32m+[m[32m            } catch {}[m
+[32m+[m[32m          },[m
+[32m+[m[32m        },[m
+[32m+[m[32m      });[m
+[32m+[m[32m    });[m
+[32m+[m
+[32m+[m[32m    return () => {[m
+[32m+[m[32m      destroyed = true;[m
+[32m+[m[32m      if (playerRef.current?.destroy) {[m
+[32m+[m[32m        try { playerRef.current.destroy(); } catch {}[m
+[32m+[m[32m        playerRef.current = null;[m
+[32m+[m[32m      }[m
+[32m+[m[32m    };[m
+[32m+[m[32m  }, [open]);[m
+[32m+[m
+[32m+[m[32m  if (!open) return null;[m
+[32m+[m
+[32m+[m[32m  return createPortal([m
+[32m+[m[32m    <div[m
+[32m+[m[32m      onMouseDown={onClose}[m
+[32m+[m[32m      onTouchStart={onClose}[m
+[32m+[m[32m      onClick={onClose}[m
+[32m+[m[32m      style={{[m
+[32m+[m[32m        position: "fixed",[m
+[32m+[m[32m        inset: 0,[m
+[32m+[m[32m        background: "rgba(0,0,0,0.7)",[m
+[32m+[m[32m        display: "grid",[m
+[32m+[m[32m        placeItems: "center",[m
+[32m+[m[32m        zIndex: 2147483647,[m
+[32m+[m[32m        padding: 16,[m
+[32m+[m[32m        cursor: "zoom-out",[m
+[32m+[m[32m      }}[m
+[32m+[m[32m    >[m
+[32m+[m[32m      <div[m
+[32m+[m[32m        role="dialog"[m
+[32m+[m[32m        aria-modal="true"[m
+[32m+[m[32m        aria-labelledby="rick-dialog-title"[m
+[32m+[m[32m        onMouseDown={(e) => e.stopPropagation()}[m
+[32m+[m[32m        onTouchStart={(e) => e.stopPropagation()}[m
+[32m+[m[32m        onClick={(e) => e.stopPropagation()}[m
+[32m+[m[32m        className="glow-panel"[m
+[32m+[m[32m        style={{[m
+[32m+[m[32m          width: "min(920px, 96vw)",[m
+[32m+[m[32m          maxHeight: "90vh",[m
+[32m+[m[32m          borderRadius: 12,[m
+[32m+[m[32m          border: "1px solid #044966",[m
+[32m+[m[32m          background: "linear-gradient(180deg, #041b22, #020c10)",[m
+[32m+[m[32m          boxShadow: "0 10px 30px rgba(0,0,0,0.6)",[m
+[32m+[m[32m          overflow: "hidden",[m
+[32m+[m[32m          cursor: "default",[m
+[32m+[m[32m        }}[m
+[32m+[m[32m      >[m
+[32m+[m[32m        <div[m
+[32m+[m[32m          style={{[m
+[32m+[m[32m            padding: "10px 12px",[m
+[32m+[m[32m            display: "flex",[m
+[32m+[m[32m            alignItems: "center",[m
+[32m+[m[32m            gap: 8,[m
+[32m+[m[32m            borderBottom: "1px solid #044966",[m
+[32m+[m[32m          }}[m
+[32m+[m[32m        >[m
+[32m+[m[32m          <span[m
+[32m+[m[32m            id="rick-dialog-title"[m
+[32m+[m[32m            className="glow-text"[m
+[32m+[m[32m            style={{ fontWeight: 800, color: "#9eeaff" }}[m
+[32m+[m[32m          >[m
+[32m+[m[32m            Never Gonna Give You Up[m
+[32m+[m[32m          </span>[m
+[32m+[m[32m          <button[m
+[32m+[m[32m            ref={closeBtnRef}[m
+[32m+[m[32m            className="btn btn-quiet"[m
+[32m+[m[32m            onClick={onClose}[m
+[32m+[m[32m            aria-label="Close"[m
+[32m+[m[32m            style={{ 
