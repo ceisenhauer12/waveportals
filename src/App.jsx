@@ -1,16 +1,9 @@
 // src/App.jsx
 import { useState, useMemo, useEffect, useRef } from "react";
-import {
-  Routes,
-  Route,
-  NavLink,
-  useParams,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, NavLink, useParams, Navigate, useLocation, } from "react-router-dom";
 import "./App.css";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
+import { createPortal } from "react-dom";
 
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
@@ -417,8 +410,7 @@ function ScrollToTop() {
   return null;
 }
 
-/* ============================== Map banner (world map with pins) ============================== */
-import { createPortal } from "react-dom";
+
 
 // ---------- One-time YouTube IFrame API loader ----------
 let __ytApiPromise;
@@ -434,39 +426,15 @@ function loadYouTubeAPI() {
   return __ytApiPromise;
 }
 
-// Rick modal rendered via portal (with a11y focus management)
+/* ===== Rick modal — Ivy clone, but rendered via PORTAL so backdrop clicks work ===== */
 function RickEggModal({ open, onClose }) {
-  const containerId = "rick-yt-player"; // unique & stable
+  const containerId = "rick-yt-player";
   const playerRef = useRef(null);
-  
-// Prevent page scroll while modal is open
-useEffect(() => {
-  if (!open) return;
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
-  return () => {
-    document.body.style.overflow = prev;
-  };
-}, [open]);
 
-  // --- A11y: focus management ---
-  const closeBtnRef = useRef(null);
-  const prevFocusRef = useRef(null);
+  // NEW: if API doesn’t load fast, fall back to a plain iframe
+  const [useEmbed, setUseEmbed] = useState(false);
+  const fallbackTimerRef = useRef(null);
 
-  useEffect(() => {
-    if (!open) return;
-    // remember who had focus
-    prevFocusRef.current = document.activeElement;
-    // focus the Close button after mount
-    const id = setTimeout(() => closeBtnRef.current?.focus(), 0);
-    return () => {
-      clearTimeout(id);
-      // restore focus when closing
-      if (prevFocusRef.current && typeof prevFocusRef.current.focus === "function") {
-        prevFocusRef.current.focus();
-      }
-    };
-  }, [open]);
 
   // ESC to close
   useEffect(() => {
@@ -475,6 +443,16 @@ useEffect(() => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // Prevent page scroll while modal is open
+useEffect(() => {
+  if (!open) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [open]);
 
   // Create / destroy player
   useEffect(() => {
@@ -509,11 +487,55 @@ useEffect(() => {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+
+    // start a 6s timer; if API hasn’t built the player by then, show the iframe
+    fallbackTimerRef.current = setTimeout(() => setUseEmbed(true), 6000);
+
+    let destroyed = false;
+    loadYouTubeAPI().then((YT) => {
+      if (destroyed || !YT || useEmbed) return;
+      try {
+        playerRef.current = new YT.Player(containerId, {
+          videoId: "dQw4w9WgXcQ",
+          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+          events: {
+            onReady: (e) => {
+              try {
+                e.target.mute();
+                e.target.playVideo();
+                setTimeout(() => {
+                  try { e.target.setVolume(25); e.target.unMute(); } catch {}
+                }, 0);
+                // success → cancel fallback
+                clearTimeout(fallbackTimerRef.current);
+              } catch {}
+            },
+          },
+        });
+      } catch {
+        setUseEmbed(true);
+      }
+    });
+
+    return () => {
+      destroyed = true;
+      clearTimeout(fallbackTimerRef.current);
+      if (playerRef.current?.destroy) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [open, useEmbed]);
+
   if (!open) return null;
 
+  // PORTAL = escape any transformed ancestors from the map; clicks hit the backdrop reliably.
   return createPortal(
     <div
-      onMouseDown={onClose}
+      onMouseDown={onClose}     // close on pointer-down (more reliable around iframes)
       onTouchStart={onClose}
       onClick={onClose}
       style={{
@@ -528,9 +550,6 @@ useEffect(() => {
       }}
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rick-dialog-title"
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
@@ -555,15 +574,10 @@ useEffect(() => {
             borderBottom: "1px solid #044966",
           }}
         >
-          <span
-            id="rick-dialog-title"
-            className="glow-text"
-            style={{ fontWeight: 800, color: "#9eeaff" }}
-          >
+          <span className="glow-text" style={{ fontWeight: 800, color: "#9eeaff" }}>
             Never Gonna Give You Up
           </span>
           <button
-            ref={closeBtnRef}
             className="btn btn-quiet"
             onClick={onClose}
             aria-label="Close"
@@ -573,6 +587,7 @@ useEffect(() => {
           </button>
         </div>
 
+        {/* Same 16:9 wrapper as Ivy (Rick is 4:3, so you’ll see pillarboxes inside) */}
         <div style={{ padding: 12 }}>
           <div
             style={{
@@ -1068,21 +1083,22 @@ export default function App() {
       <CanonicalTag />
       <ScrollToTop />
 
-      <header
-        style={{
-          position: "relative",
-          borderBottom: "1px solid #022",
-          padding: "28px 48px",
-          minHeight: "50px",
-          backgroundImage: "url('/images/branding/wave_portal_2.jpg')",
-          backgroundSize: "100% auto",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          display: "flex",
-          alignItems: "center",
-          gap: 24,
-        }}
-      >
+      <header className="site-header" style={{ /* your current inline styles */ 
+    position: "relative",
+    borderBottom: "1px solid #022",
+    padding: "10px 20px",          // was 28px 48px
+    minHeight: 0,                   // was 50px
+    backgroundImage: "url('/images/branding/wave_portal_2.jpg')",
+    backgroundSize: "cover",        // (optional) fill nicely
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,                        // was 24
+    
+  }}
+>
+
         <div
           style={{
             position: "absolute",

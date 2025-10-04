@@ -177,3 +177,11 @@ body.perf .ivy-logo:hover { filter: none !important; transform: none !important;
 :root {
   --glow-color: #33ccff; /* match header font color */
 }
+@media (max-width: 640px) {
+  .site-header {
+    padding: 8px 12px !important;
+  }
+  .site-header .glow-text {
+    font-size: 1.1rem !important; /* was 1.4rem */
+  }
+}
