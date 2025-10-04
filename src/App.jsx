@@ -11,6 +11,7 @@ import {
 import "./App.css";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
+
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
 function CanonicalTag() {
@@ -82,7 +83,7 @@ function useShareMeta({ title, description, url, image }) {
 }
 
 /* ===================== Partner / referral link helper ===================== */
-const MYE_REF = ""; // <-- drop your myearthmeta referral code here when you get it
+const MYE_REF = "EM20252B6414"; // <-- drop your myearthmeta referral code here when you get it
 const DEFAULT_UTM = {
   utm_source: "waveportals",
   utm_medium: "site",
@@ -417,9 +418,196 @@ function ScrollToTop() {
 }
 
 /* ============================== Map banner (world map with pins) ============================== */
+import { createPortal } from "react-dom";
+
+// ---------- One-time YouTube IFrame API loader ----------
+let __ytApiPromise;
+function loadYouTubeAPI() {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (__ytApiPromise) return __ytApiPromise;
+  __ytApiPromise = new Promise((resolve) => {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+  });
+  return __ytApiPromise;
+}
+
+// Rick modal rendered via portal (with a11y focus management)
+function RickEggModal({ open, onClose }) {
+  const containerId = "rick-yt-player"; // unique & stable
+  const playerRef = useRef(null);
+  
+// Prevent page scroll while modal is open
+useEffect(() => {
+  if (!open) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [open]);
+
+  // --- A11y: focus management ---
+  const closeBtnRef = useRef(null);
+  const prevFocusRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    // remember who had focus
+    prevFocusRef.current = document.activeElement;
+    // focus the Close button after mount
+    const id = setTimeout(() => closeBtnRef.current?.focus(), 0);
+    return () => {
+      clearTimeout(id);
+      // restore focus when closing
+      if (prevFocusRef.current && typeof prevFocusRef.current.focus === "function") {
+        prevFocusRef.current.focus();
+      }
+    };
+  }, [open]);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Create / destroy player
+  useEffect(() => {
+    if (!open) return;
+
+    let destroyed = false;
+    loadYouTubeAPI().then((YT) => {
+      if (destroyed) return;
+      playerRef.current = new YT.Player(containerId, {
+        videoId: "dQw4w9WgXcQ",
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onReady: (e) => {
+            try {
+              e.target.mute();
+              e.target.playVideo();
+              setTimeout(() => {
+                try { e.target.setVolume(25); e.target.unMute(); } catch {}
+              }, 0);
+            } catch {}
+          },
+        },
+      });
+    });
+
+    return () => {
+      destroyed = true;
+      if (playerRef.current?.destroy) {
+        try { playerRef.current.destroy(); } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      onMouseDown={onClose}
+      onTouchStart={onClose}
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 2147483647,
+        padding: 16,
+        cursor: "zoom-out",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rick-dialog-title"
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="glow-panel"
+        style={{
+          width: "min(920px, 96vw)",
+          maxHeight: "90vh",
+          borderRadius: 12,
+          border: "1px solid #044966",
+          background: "linear-gradient(180deg, #041b22, #020c10)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+          overflow: "hidden",
+          cursor: "default",
+        }}
+      >
+        <div
+          style={{
+            padding: "10px 12px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            borderBottom: "1px solid #044966",
+          }}
+        >
+          <span
+            id="rick-dialog-title"
+            className="glow-text"
+            style={{ fontWeight: 800, color: "#9eeaff" }}
+          >
+            Never Gonna Give You Up
+          </span>
+          <button
+            ref={closeBtnRef}
+            className="btn btn-quiet"
+            onClick={onClose}
+            aria-label="Close"
+            style={{ marginLeft: "auto" }}
+          >
+            Close
+          </button>
+        </div>
+
+        <div style={{ padding: 12 }}>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "16 / 9",
+              maxHeight: "70vh",
+              borderRadius: 10,
+              overflow: "hidden",
+              border: "1px solid #044966",
+              background: "#000",
+            }}
+          >
+            <div id={containerId} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
+          </div>
+
+          <p className="muted" style={{ marginTop: 8 }}>
+            Tip: click outside the player or press <kbd>Esc</kbd> to close.
+          </p>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+
+/* ============================== Map banner (world map with pins) ============================== */
 function MapBanner() {
   const ref = useRef(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+
+  // Rick Easter Egg modal + hover state
+  const [rickOpen, setRickOpen] = useState(false);
+  const [rickHover, setRickHover] = useState(false);
 
   useEffect(() => {
     function onResize() {
@@ -444,6 +632,10 @@ function MapBanner() {
     const y = ((90 - lat) / 180) * size.h;
     return [x, y];
   }
+
+  // Freston Road railway bridge (under Westway)
+  const RICK_COORDS = [51.51373, -0.21926];
+  const [rx, ry] = project(RICK_COORDS);
 
   return (
     <section
@@ -519,6 +711,7 @@ function MapBanner() {
                   }}
                 />
 
+                {/* Normal city pins */}
                 {size.w > 0 &&
                   points.map((p) => {
                     const [x, y] = project(p.coords);
@@ -529,15 +722,68 @@ function MapBanner() {
                         y={y}
                         id={p.id}
                         title={p.title}
-                        scale={state?.scale || 1} // pass current zoom
+                        scale={state?.scale || 1}
                       />
                     );
                   })}
+
+                {/* Rick pin — same style as MapPin, click opens modal */}
+                {size.w > 0 && (
+                  <div
+                    role="button"
+                    aria-label="Give up?"
+                    title="Give up?"
+                    onMouseEnter={() => setRickHover(true)}
+                    onMouseLeave={() => setRickHover(false)}
+                    onClick={() => setRickOpen(true)}
+                    style={{
+                      position: "absolute",
+                      left: rx,
+                      top: ry,
+                      transform: `translate(-50%, -50%) scale(${1 / (state?.scale || 1)})`,
+                      transformOrigin: "50% 50%",
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: "#33ccff",
+                      boxShadow: "0 0 4px #33ccff, 0 0 8px rgba(0,255,255,0.5)",
+                      border: "1px solid #033",
+                      cursor: "pointer",
+                      zIndex: 3,
+                    }}
+                  >
+                    {rickHover && (
+                      <span
+                        role="tooltip"
+                        style={{
+                          position: "absolute",
+                          left: "50%",
+                          bottom: "100%",
+                          transform: "translate(-50%, -8px)",
+                          background: "rgba(5, 30, 40, 0.95)",
+                          border: "1px solid #044966",
+                          color: "#9eeaff",
+                          padding: "6px 8px",
+                          borderRadius: 8,
+                          whiteSpace: "nowrap",
+                          fontSize: 12,
+                          boxShadow: "0 4px 12px rgba(0,0,0,.5)",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        Give up?
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </TransformComponent>
           )}
         </TransformWrapper>
       </div>
+
+      {/* Rick modal via portal (outside any transformed ancestor) */}
+      <RickEggModal open={rickOpen} onClose={() => setRickOpen(false)} />
     </section>
   );
 }
@@ -553,7 +799,6 @@ function MapPin({ x, y, id, title, scale = 1 }) {
         position: "absolute",
         left: x,
         top: y,
-        // move the element’s center to the projected coordinate, then counter-scale
         transform: `translate(-50%, -50%) scale(${1 / scale})`,
         transformOrigin: "50% 50%",
         width: base,
@@ -569,6 +814,8 @@ function MapPin({ x, y, id, title, scale = 1 }) {
   );
 }
 
+
+
 /* ============================== Tiny Markdown -> HTML ============================== */
 /* Supports: ### headings, **bold**, links [text](url), bullet lists '-', line breaks */
 function mdToHtml(md = "") {
@@ -576,7 +823,7 @@ function mdToHtml(md = "") {
   // escape HTML
   let h = md.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
-  // headings ### 
+  // headings ###
   h = h.replace(/^### (.*)$/gm, "<h3>$1</h3>");
   // bold **text**
   h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -597,6 +844,7 @@ function mdToHtml(md = "") {
   return h;
 }
 
+
 /* ============================== App Shell ============================== */
 function GlobalAffiliateBanner() {
   // site-wide holding banner; shows even with no href
@@ -611,6 +859,199 @@ function GlobalAffiliateBanner() {
     </div>
   );
 }
+
+// ---------- IvyEasterEgg with hover hint ----------
+function IvyEasterEgg({ children, hint = "you let me be" }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+
+  return (
+    <>
+      <span
+        onClick={() => setOpen(true)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        aria-label="Open easter egg"
+        // title is a fallback tooltip for touch/assistive tech
+        title={hint}
+        style={{ position: "relative", display: "inline-block", cursor: "pointer" }}
+      >
+        {children}
+
+        {/* Hover tooltip */}
+        {hover && (
+          <span
+            role="tooltip"
+            style={{
+              position: "absolute",
+              bottom: "100%",
+              left: "50%",
+              transform: "translate(-50%, -8px)",
+              background: "rgba(5, 30, 40, 0.95)",
+              border: "1px solid #044966",
+              color: "#9eeaff",
+              padding: "6px 8px",
+              borderRadius: 8,
+              whiteSpace: "nowrap",
+              fontSize: 12,
+              boxShadow: "0 4px 12px rgba(0,0,0,.5)",
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            {hint}
+          </span>
+        )}
+      </span>
+
+      <IvyEggModal open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+
+// ---------- Modal for the easter egg ----------
+function IvyEggModal({ open, onClose }) {
+  const containerId = "ivy-yt-player";
+  const playerRef = useRef(null);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Create / destroy player
+  useEffect(() => {
+    if (!open) return;
+
+    let destroyed = false;
+
+    loadYouTubeAPI().then((YT) => {
+      if (destroyed) return;
+
+      playerRef.current = new YT.Player(containerId, {
+        videoId: "YcPPq98OY_w", // ABBA — I Am The City
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+        },
+        events: {
+          onReady: (e) => {
+            try {
+              // Start muted to satisfy autoplay policies, then unmute to 25%.
+              e.target.mute();
+              e.target.playVideo();
+              // The click that opened the modal counts as a user gesture,
+              // so we can unmute & set volume right away.
+              setTimeout(() => {
+                try {
+                  e.target.setVolume(25); // 0–100
+                  e.target.unMute();
+                } catch {}
+              }, 0);
+            } catch {}
+          },
+        },
+      });
+    });
+
+    return () => {
+      destroyed = true;
+      if (playerRef.current && playerRef.current.destroy) {
+        try {
+          playerRef.current.destroy();
+        } catch {}
+        playerRef.current = null;
+      }
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 9999,
+        padding: 16,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="glow-panel"
+        style={{
+          width: "min(920px, 96vw)",
+          borderRadius: 12,
+          border: "1px solid #044966",
+          background: "linear-gradient(180deg, #041b22, #020c10)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "10px 12px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            borderBottom: "1px solid #044966",
+          }}
+        >
+          <span className="glow-text" style={{ fontWeight: 800, color: "#9eeaff" }}>
+            you let me be
+          </span>
+          <span className="muted" style={{ fontSize: ".9rem" }}>
+            — thanks for finding the easter egg
+          </span>
+
+          <button
+            className="btn btn-quiet"
+            onClick={onClose}
+            aria-label="Close"
+            style={{ marginLeft: "auto" }}
+          >
+            Close
+          </button>
+        </div>
+
+        {/* Player container with a stable 16:9 box so it always fits */}
+        <div style={{ padding: 12 }}>
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "16 / 9",
+              borderRadius: 10,
+              overflow: "hidden",
+              border: "1px solid #044966",
+            }}
+          >
+            <div
+              id={containerId}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+            />
+          </div>
+
+          <p className="muted" style={{ marginTop: 8 }}>
+            Tip: click outside the player or press <kbd>Esc</kbd> to close.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 export default function App() {
   useEffect(() => {
@@ -687,7 +1128,7 @@ export default function App() {
         >
           WavePortals: riding the wave of{" "}
           <a
-            href="https://earthmeta.ai"
+            href="https://app.earthmeta.ai?ref=EM20252B6414"
             target="_blank"
             rel="noopener noreferrer"
             style={{ fontWeight: 700, color: "#0ff", textDecoration: "none" }}
@@ -710,25 +1151,33 @@ export default function App() {
       {/* Site-wide holding banner (shows even without affiliate) */}
       <GlobalAffiliateBanner />
 
-      <footer
-        className="glow-footer"
-        style={{ padding: "20px 32px", marginTop: 16, textAlign: "center" }}
-      >
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-          <span>© {new Date().getFullYear()} WavePortals — built by</span>
-          <img
-            src="/images/branding/ivy-mark.png"
-            alt="Ivy logo"
-            className="ivy-logo"
-            style={{
-              height: 48,
-              width: "auto",
-              transition: "transform 0.3s ease, filter 0.3s ease",
-              filter: "brightness(1.2) saturate(1.4)",
-            }}
-          />
-        </div>
-      </footer>
+     
+
+
+<footer
+  className="glow-footer"
+  style={{ padding: "20px 32px", marginTop: 16, textAlign: "center" }}
+>
+  <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+    <span>© {new Date().getFullYear()} WavePortals — built by</span>
+    <IvyEasterEgg>
+      <img
+        src="/images/branding/ivy-mark.png"
+        alt="Ivy logo"
+        className="ivy-logo"
+        style={{
+          height: 48,
+          width: "auto",
+          transition: "transform 0.3s ease, filter 0.3s ease",
+          filter: "brightness(1.2) saturate(1.4)",
+          cursor: "pointer",
+        }}
+      />
+    </IvyEasterEgg>
+  </div>
+</footer>
+
+
     </div>
   );
 }
