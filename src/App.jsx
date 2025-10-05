@@ -490,35 +490,39 @@ useEffect(() => {
   useEffect(() => {
     if (!open) return;
 
+// removed the auto-fallback timer; only fallback on API/player error
+let destroyed = false;
 
-    // start a 6s timer; if API hasn’t built the player by then, show the iframe
-    fallbackTimerRef.current = setTimeout(() => setUseEmbed(true), 6000);
-
-    let destroyed = false;
-    loadYouTubeAPI().then((YT) => {
-      if (destroyed || !YT || useEmbed) return;
-      try {
-        playerRef.current = new YT.Player(containerId, {
-          videoId: "dQw4w9WgXcQ",
-          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
-          events: {
-            onReady: (e) => {
-              try {
-                e.target.mute();
-                e.target.playVideo();
-                setTimeout(() => {
-                  try { e.target.setVolume(25); e.target.unMute(); } catch {}
-                }, 0);
-                // success → cancel fallback
-                clearTimeout(fallbackTimerRef.current);
-              } catch {}
-            },
+loadYouTubeAPI()
+  .then((YT) => {
+    if (destroyed || !YT || useEmbed) return;
+    try {
+      playerRef.current = new YT.Player(containerId, {
+        videoId: "dQw4w9WgXcQ",
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onReady: (e) => {
+            try {
+              e.target.mute();
+              e.target.playVideo();
+              setTimeout(() => {
+                try { e.target.setVolume(25); e.target.unMute(); } catch {}
+              }, 0);
+            } catch {}
           },
-        });
-      } catch {
-        setUseEmbed(true);
-      }
-    });
+          onError: () => {
+            if (!destroyed) setUseEmbed(true);
+          },
+        },
+      });
+    } catch {
+      if (!destroyed) setUseEmbed(true);
+    }
+  })
+  .catch(() => {
+    if (!destroyed) setUseEmbed(true);
+  });
+
 
     return () => {
       destroyed = true;
