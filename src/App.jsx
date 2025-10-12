@@ -1456,7 +1456,7 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
     {
       id: "secu-stadium- Maryland Terrapins",
       name: "SECU Stadium — Football Game Day",
-      blurb: "Clip with Maryland football vs Nebraska Cornhusksers 10/11/25.",
+      blurb: "Football Stadium for Maryland Terrapins",
       // time-linked YouTube; our toEmbedUrl() will convert this to the /embed form
       videoUrl: "https://youtu.be/9q155EcabSs?t=676",
       affiliateUrl: ""
