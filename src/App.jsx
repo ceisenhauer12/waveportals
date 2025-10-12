@@ -1439,22 +1439,31 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
   },
 
   "college-park-md": {
-    title: "College Park, MD – University of Maryland",
-    blurb: "Academia, research, and proximity to Washington, D.C.",
-    tags: ["University", "Research", "DC Area"],
-    earthmetaUrl:
-      "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
-    coords: [38.9807, -76.9369],
-    lands: [
-      {
-        id: "xfinity-center",
-        name: "Xfinity Center",
-        blurb: "Maryland Terrapins arena and events hub.",
-        videoUrl: "",
-        affiliateUrl: "",
-      },
-    ],
-  },
+  title: "College Park, MD – University of Maryland",
+  blurb: "Academia, research, and proximity to Washington, D.C.",
+  tags: ["University", "Research", "DC Area"],
+  earthmetaUrl:
+    "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
+  coords: [38.9807, -76.9369],
+  lands: [
+    {
+      id: "xfinity-center",
+      name: "Xfinity Center",
+      blurb: "Maryland Terrapins arena and events hub.",
+      videoUrl: "",
+      affiliateUrl: ""
+    },
+    {
+      id: "secu-stadium- Maryland Terrapins",
+      name: "SECU Stadium — Football Game Day",
+      blurb: "Clip with Maryland football vs Nebraska Cornhusksers 10/11/25.",
+      // time-linked YouTube; our toEmbedUrl() will convert this to the /embed form
+      videoUrl: "https://youtu.be/9q155EcabSs?t=676",
+      affiliateUrl: ""
+    }
+  ]
+},
+
 
   "jeonju-kr": {
     title: "Jeonju, South Korea – UNESCO & food",
