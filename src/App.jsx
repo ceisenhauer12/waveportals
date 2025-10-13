@@ -579,7 +579,7 @@ loadYouTubeAPI()
           }}
         >
           <span className="glow-text" style={{ fontWeight: 800, color: "#9eeaff" }}>
-            Never Gonna Give You Up - Freston Road railway bridge — Notting Hill.
+            You got Rick-Rolled! - Freston Road railway bridge — Notting Hill.
           </span>
           <button
             className="btn btn-quiet"
@@ -750,8 +750,8 @@ function MapBanner() {
                 {size.w > 0 && (
                   <div
                     role="button"
-                    aria-label="Give up?"
-                    title="Give up?"
+                    aria-label="Click me"
+                    title="Click me"
                     onMouseEnter={() => setRickHover(true)}
                     onMouseLeave={() => setRickHover(false)}
                     onClick={() => setRickOpen(true)}
@@ -790,7 +790,7 @@ function MapBanner() {
                           pointerEvents: "none",
                         }}
                       >
-                        Give up?
+                        Never Give up
                       </span>
                     )}
                   </div>
