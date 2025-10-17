@@ -1160,13 +1160,20 @@ export default function App() {
       </header>
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/city/:id" element={<CityDetail />} />
-        <Route path="/city/:id/land/:landId" element={<LandDetail />} />
-        <Route path="/404" element={<NotFound />} />
-        <Route path="*" element={<Navigate to="/404" replace />} />
-        <Route path="/city/:id/affiliates" element={<CityAffiliates />} />
-      </Routes>
+  <Route path="/" element={<Home />} />
+  <Route path="/city/:id" element={<CityDetail />} />
+  <Route path="/city/:id/land/:landId" element={<LandDetail />} />
+
+  {/* NEW: sub-land route (must be BEFORE the wildcard) */}
+  <Route path="/city/:id/land/:landId/sub/:subId" element={<SubLandDetail />} />
+
+  <Route path="/city/:id/affiliates" element={<CityAffiliates />} />
+  <Route path="/404" element={<NotFound />} />
+
+  {/* Keep this LAST */}
+  <Route path="*" element={<Navigate to="/404" replace />} />
+</Routes>
+
 
       {/* Site-wide holding banner (shows even without affiliate) */}
       <GlobalAffiliateBanner />
@@ -1574,23 +1581,45 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
   },
 
   "norrkoping-se": {
-    title: "Norrköping, Sweden – Reinvented industrial hub",
-    blurb:
-      "Historic industrial core turned into a tech & creative cluster.",
-    tags: ["Tech", "Creative", "Industrial"],
-    earthmetaUrl:
-      "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
-    coords: [58.5877, 16.1924],
-    lands: [
-      {
-        id: "visualization-center-c",
-        name: "Visualization Center C",
-        blurb: "Science visualization and education magnet.",
-        videoUrl: "",
-        affiliateUrl: "",
-      },
-    ],
-  },
+  title: "Norrköping, Sweden – Reinvented industrial hub",
+  blurb:
+    "Historic industrial core turned into a tech & creative cluster — gateway to Kolmården Wildlife Park.",
+  tags: ["Tech", "Creative", "Industrial", "Wildlife"],
+  earthmetaUrl:
+    "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
+  coords: [58.5877, 16.1924],
+  lands: [
+    {
+      id: "visualization-center-c",
+      name: "Visualization Center C",
+      blurb: "Science visualization and education magnet.",
+      videoUrl: "",
+      affiliateUrl: "",
+    },
+    {
+      id: "kolmarden-zoo",
+      name: "Kolmården Wildlife Park",
+      blurb:
+        "Scandinavia’s largest zoo overlooking the Baltic Sea — home to wildlife safaris, marine shows, and the record-breaking Wildfire coaster.",
+      videoUrl: "https://youtu.be/XYrQATi5nXI?si=bouKvBVHdNLaYaK5",
+      affiliateUrl: "",
+      sublands: [
+        {
+          id: "wildfire",
+          name: "Wildfire Wooden Coaster",
+          blurb:
+            "An RMC wooden coaster that drops 57 meters, hits 115 km/h, and roars over forest cliffs with Baltic views.",
+          videoUrl: "https://youtu.be/aFm5e8fHGQ4?si=goKUMU01FS2kD34E",
+          affiliateUrl: "",
+        },
+        // Future additions (example):
+        // { id: "lion-habitat", name: "Lion Habitat", blurb: "Africa zone centerpiece.", videoUrl: "", affiliateUrl: "" },
+        // { id: "tiger-forest", name: "Tiger Forest", blurb: "Asian predators habitat.", videoUrl: "", affiliateUrl: "" },
+      ],
+    },
+  ],
+},
+
 
   "carolina-pr": {
     title: "Carolina, Puerto Rico – SJU gateway",
@@ -2106,12 +2135,107 @@ function LandDetail() {
           </a>
         ) : null}
       </div>
+      {/* --- Sub-lands (e.g., Wildfire inside Kolmården Zoo) --- */}
+{Array.isArray(land.sublands) && land.sublands.length > 0 && (
+  <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+    <h3 className="glow-text" style={{ marginTop: 0 }}>Attractions in {land.name}</h3>
+    <div className="card-list" style={{ marginTop: 12 }}>
+      {land.sublands.map((s) => (
+        <div key={s.id} className="card">
+          <h4 style={{ marginTop: 0 }}>{s.name}</h4>
+          <div className="muted clamp-2">{s.blurb}</div>
+          <div className="btn-row" style={{ marginTop: 8 }}>
+            <NavLink
+              to={`/city/${id}/land/${land.id}/sub/${s.id}`}
+              className="btn btn-primary"
+            >
+              View
+            </NavLink>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
 
       
     </main>
   );
 }
 
+function SubLandDetail() {
+  const { id, landId, subId } = useParams();
+  const city = CITY_DB[id];
+  if (!city) return <Navigate to="/404" replace />;
+
+  const land = city.lands?.find((l) => l.id === landId);
+  if (!land || !Array.isArray(land.sublands)) return <Navigate to="/404" replace />;
+
+  const sub = land.sublands.find((s) => s.id === subId);
+  if (!sub) return <Navigate to="/404" replace />;
+
+  const embedSrc = toEmbedUrl(sub.videoUrl);
+
+  usePageMeta(`${sub.name} • ${land.name} • ${city.title} • WavePortals`, sub.blurb);
+  useShareMeta({
+    title: `${sub.name} • ${land.name} • ${city.title} • WavePortals`,
+    description: sub.blurb,
+    url: `${CANONICAL_ORIGIN}/city/${id}/land/${landId}/sub/${subId}`,
+    image: `${CANONICAL_ORIGIN}${city.heroImg || `/images/cities/${id}.jpg`}`,
+  });
+
+  return (
+    <main>
+      <p style={{ marginBottom: 12 }}>
+        <NavLink
+          to={`/city/${id}/land/${landId}`}
+          className="glow-text glow-hover"
+          style={{ textDecoration: "none" }}
+        >
+          ← Back to {land.name}
+        </NavLink>
+      </p>
+
+      <h1 className="glow-text" style={{ marginTop: 0 }}>{sub.name}</h1>
+      <p className="muted">{sub.blurb}</p>
+
+      {embedSrc ? (
+        <DeferredIframe
+          src={embedSrc}
+          title={sub.name}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ border: 0, width: "100%", height: "100%" }}
+        />
+      ) : (
+        <div className="glow-panel" style={{ display: "grid", placeItems: "center", padding: 40 }}>
+          <span className="muted">No video yet</span>
+        </div>
+      )}
+
+      <div className="btn-row" style={{ marginTop: 12 }}>
+        <NavLink to={`/city/${id}/land/${landId}`} className="btn btn-quiet">
+          Back to {land.name}
+        </NavLink>
+        <NavLink to={`/city/${id}`} className="btn btn-quiet">
+          Back to lands
+        </NavLink>
+        {city.earthmetaUrl ? (
+          <a
+            href={buildPartnerLink(city.earthmetaUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            title="Open this city on EarthMeta.ai"
+          >
+            🌍 City on EarthMeta.ai
+          </a>
+        ) : null}
+      </div>
+    </main>
+  );
+}
 
 /* ============================== Utility: watch → embed ============================== */
 function toEmbedUrl(url) {
