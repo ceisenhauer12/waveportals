@@ -1,15 +1,21 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PEM10X5GZT"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      gtag('js', new Date());
+      // We'll send page views manually from React (SPA)
+      gtag('config', 'G-PEM10X5GZT', { send_page_view: false });
+    </script>
+
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#00141a" />
 
-    <!-- Base title/description (route-level overrides via useShareMeta/usePageMeta) -->
     <title>WavePortals</title>
     <meta
       name="description"
@@ -22,10 +28,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
 
     <!-- Favicons / App Icons -->
     <link rel="icon" href="/favicon.ico?v=6" sizes="any" />
@@ -42,26 +45,14 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="WavePortals" />
     <meta property="og:title" content="WavePortals" />
-    <meta
-      property="og:description"
-      content="Explore curated cities and lands with live cams and portals into EarthMeta."
-    />
-    <meta
-      property="og:image"
-      content="https://www.waveportals.com/images/branding/wave_portal_2.jpg"
-    />
+    <meta property="og:description" content="Explore curated cities and lands with live cams and portals into EarthMeta." />
+    <meta property="og:image" content="https://www.waveportals.com/images/branding/wave_portal_2.jpg" />
     <meta property="og:url" content="https://www.waveportals.com/" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="WavePortals" />
-    <meta
-      name="twitter:description"
-      content="Explore curated cities and lands with live cams and portals into EarthMeta."
-    />
-    <meta
-      name="twitter:image"
-      content="https://www.waveportals.com/images/branding/wave_portal_2.jpg"
-    />
+    <meta name="twitter:description" content="Explore curated cities and lands with live cams and portals into EarthMeta." />
+    <meta name="twitter:image" content="https://www.waveportals.com/images/branding/wave_portal_2.jpg" />
 
     <!-- Basic security & referrer hygiene -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />

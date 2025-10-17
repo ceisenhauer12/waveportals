@@ -1,9 +1,43 @@
 // src/App.jsx
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Routes, Route, NavLink, useParams, Navigate, useLocation, } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  NavLink,
+  useParams,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import "./App.css";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { createPortal } from "react-dom";
+import { createPortal } from "react-dom"; // ← if you also import this later in the file, delete the later one
+
+/* ===================== GA4 page-view tracker ===================== */
+function GAViewTracker() {
+  const location = useLocation();
+  const isDev = import.meta?.env?.DEV;
+
+  useEffect(() => {
+    const url = location.pathname + location.search;
+
+    if (!window.gtag) {
+      if (isDev) console.info("[GA] gtag missing (possibly blocked) for", url);
+      return;
+    }
+
+    window.gtag("event", "page_view", {
+      page_title: document.title || "WavePortals",
+      page_location: window.location.origin + url,
+      page_path: url,
+      debug_mode: !!isDev,
+    });
+
+    if (isDev) console.info("[GA] page_view →", url);
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
@@ -12,7 +46,9 @@ function CanonicalTag() {
   useEffect(() => {
     // normalize: remove trailing "/" except root
     const cleanPath =
-      pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+      pathname !== "/" && pathname.endsWith("/")
+        ? pathname.slice(0, -1)
+        : pathname;
     const href = CANONICAL_ORIGIN + cleanPath + search;
     let link = document.querySelector('link[rel="canonical"]');
     if (!link) {
@@ -62,21 +98,47 @@ function setOrCreate(selector, attrs) {
 function useShareMeta({ title, description, url, image }) {
   useEffect(() => {
     document.title = title || "WavePortals";
-    setOrCreate('meta[name="description"]', { name: "description", content: description || "" });
+    setOrCreate('meta[name="description"]', {
+      name: "description",
+      content: description || "",
+    });
 
-    setOrCreate('meta[property="og:title"]', { property: "og:title", content: title || "WavePortals" });
-    setOrCreate('meta[property="og:description"]', { property: "og:description", content: description || "" });
-    setOrCreate('meta[property="og:url"]', { property: "og:url", content: url || CANONICAL_ORIGIN + "/" });
-    if (image) setOrCreate('meta[property="og:image"]', { property: "og:image", content: image });
+    setOrCreate('meta[property="og:title"]', {
+      property: "og:title",
+      content: title || "WavePortals",
+    });
+    setOrCreate('meta[property="og:description"]', {
+      property: "og:description",
+      content: description || "",
+    });
+    setOrCreate('meta[property="og:url"]', {
+      property: "og:url",
+      content: url || CANONICAL_ORIGIN + "/",
+    });
+    if (image)
+      setOrCreate('meta[property="og:image"]', {
+        property: "og:image",
+        content: image,
+      });
 
-    setOrCreate('meta[name="twitter:title"]', { name: "twitter:title", content: title || "WavePortals" });
-    setOrCreate('meta[name="twitter:description"]', { name: "twitter:description", content: description || "" });
-    if (image) setOrCreate('meta[name="twitter:image"]', { name: "twitter:image", content: image });
+    setOrCreate('meta[name="twitter:title"]', {
+      name: "twitter:title",
+      content: title || "WavePortals",
+    });
+    setOrCreate('meta[name="twitter:description"]', {
+      name: "twitter:description",
+      content: description || "",
+    });
+    if (image)
+      setOrCreate('meta[name="twitter:image"]', {
+        name: "twitter:image",
+        content: image,
+      });
   }, [title, description, url, image]);
 }
 
 /* ===================== Partner / referral link helper ===================== */
-const MYE_REF = "EM20252B6414"; // <-- drop your myearthmeta referral code here when you get it
+const MYE_REF = "EM20252B6414";
 const DEFAULT_UTM = {
   utm_source: "waveportals",
   utm_medium: "site",
@@ -95,6 +157,7 @@ function buildPartnerLink(raw) {
     return raw;
   }
 }
+
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
 /* LIVE badge window: Thursday 9:00–11:00 AM CT (covers ceremony ~9:00–10:45) */
@@ -1072,6 +1135,7 @@ function IvyEggModal({ open, onClose }) {
 
 
 
+
 export default function App() {
   useEffect(() => {
     const lowCores =
@@ -1086,6 +1150,7 @@ export default function App() {
     <div style={{ minHeight: "100vh" }}>
       <CanonicalTag />
       <ScrollToTop />
+      <GAViewTracker /> 
 
       <header className="site-header" style={{ /* your current inline styles */ 
     position: "relative",
