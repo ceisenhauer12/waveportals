@@ -1486,7 +1486,7 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
         id: "cluj-arena-untold",
         name: "Cluj Arena / UNTOLD",
         blurb: "Festival epicenter with massive international draw.",
-        videoUrl: "",
+        videoUrl: "https://youtu.be/qV9uPUgvjWU?si=EDouF2dai6mvuxGU",
         affiliateUrl: "",
       },
     ],
