@@ -1570,6 +1570,14 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
         videoUrl: "",
         affiliateUrl: "",
       },
+      {
+  id: "beats-for-love",
+  name: "Beats for Love @ Dolní Vítkovice",
+  blurb:
+    "One of Central Europe’s biggest electronic music festivals. Every early July, 100k+ fans take over Ostrava’s reimagined steelworks—dozens of stages threaded through blast furnaces, the Gong hall, and Bolt Tower. House, techno, DnB, trance, and more in a surreal industrial backdrop.",
+  videoUrl: "https://youtu.be/U7YEdDONt-0?si=XcqGEkEhGMH95Mj0", // ← paste a YouTube link here (can be youtu.be or watch?v=; we auto-convert)
+  affiliateUrl: ""
+},
     ],
   },
 
