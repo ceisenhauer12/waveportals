@@ -1468,7 +1468,7 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
         id: "roskilde-festival-grounds",
         name: "Roskilde Festival Grounds",
         blurb: "One of Europe’s largest music festivals.",
-        videoUrl: "",
+        videoUrl: "https://youtu.be/8MsWM5tNfQ4?si=1DzmXtfZaTkfy_MH",
         affiliateUrl: "",
       },
     ],
