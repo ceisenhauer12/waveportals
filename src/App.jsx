@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, memo } from "react";
 import {
   Routes,
   Route,
@@ -37,7 +37,6 @@ function GAViewTracker() {
 
   return null;
 }
-
 
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
@@ -158,7 +157,6 @@ function buildPartnerLink(raw) {
   }
 }
 
-
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
 /* LIVE badge window: Thursday 9:00–11:00 AM CT (covers ceremony ~9:00–10:45) */
 function isInCTLiveWindow() {
@@ -173,7 +171,6 @@ function isInCTLiveWindow() {
   const beforeEnd  = h < 10 || (h === 10 && m <= 45); // <= 10:45
   return afterStart && beforeEnd;
 }
-
 
 function useIsInCTLiveWindow() {
   const [inWindow, setInWindow] = useState(isInCTLiveWindow());
@@ -410,6 +407,27 @@ function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
   );
 }
 
+/* ===================== LazyMount helper (for heavy sections) ===================== */
+function LazyMount({ children, rootMargin = "600px" }) {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current || inView) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        setInView(true);
+        obs.disconnect();
+      }
+    }, { rootMargin });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [inView, rootMargin]);
+
+  // Reserve a bit of space to avoid layout jump (adjust if needed)
+  return <div ref={ref}>{inView ? children : <div style={{ height: 360 }} />}</div>;
+}
+
 /* ===================== City image components (local → Picsum fallback) ===================== */
 function CityTileImage({ id, title, heroImg }) {
   const initialSrc = heroImg || `/images/cities/${id}.jpg`;
@@ -445,6 +463,7 @@ function CityBannerImage({ id, title, heroImg }) {
       src={initialSrc}
       alt={title || "City image"}
       loading="lazy"
+      decoding="async"
       width={1600}
       height={900}
       onError={(e) => {
@@ -473,8 +492,6 @@ function ScrollToTop() {
   return null;
 }
 
-
-
 // ---------- One-time YouTube IFrame API loader ----------
 let __ytApiPromise;
 function loadYouTubeAPI() {
@@ -498,7 +515,6 @@ function RickEggModal({ open, onClose }) {
   const [useEmbed, setUseEmbed] = useState(false);
   const fallbackTimerRef = useRef(null);
 
-
   // ESC to close
   useEffect(() => {
     if (!open) return;
@@ -508,14 +524,14 @@ function RickEggModal({ open, onClose }) {
   }, [open, onClose]);
 
   // Prevent page scroll while modal is open
-useEffect(() => {
-  if (!open) return;
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
-  return () => {
-    document.body.style.overflow = prev;
-  };
-}, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   // Create / destroy player
   useEffect(() => {
@@ -553,39 +569,38 @@ useEffect(() => {
   useEffect(() => {
     if (!open) return;
 
-// removed the auto-fallback timer; only fallback on API/player error
-let destroyed = false;
+    // removed the auto-fallback timer; only fallback on API/player error
+    let destroyed = false;
 
-loadYouTubeAPI()
-  .then((YT) => {
-    if (destroyed || !YT || useEmbed) return;
-    try {
-      playerRef.current = new YT.Player(containerId, {
-        videoId: "dQw4w9WgXcQ",
-        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
-        events: {
-          onReady: (e) => {
-            try {
-              e.target.mute();
-              e.target.playVideo();
-              setTimeout(() => {
-                try { e.target.setVolume(25); e.target.unMute(); } catch {}
-              }, 0);
-            } catch {}
-          },
-          onError: () => {
-            if (!destroyed) setUseEmbed(true);
-          },
-        },
+    loadYouTubeAPI()
+      .then((YT) => {
+        if (destroyed || !YT || useEmbed) return;
+        try {
+          playerRef.current = new YT.Player(containerId, {
+            videoId: "dQw4w9WgXcQ",
+            playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+            events: {
+              onReady: (e) => {
+                try {
+                  e.target.mute();
+                  e.target.playVideo();
+                  setTimeout(() => {
+                    try { e.target.setVolume(25); e.target.unMute(); } catch {}
+                  }, 0);
+                } catch {}
+              },
+              onError: () => {
+                if (!destroyed) setUseEmbed(true);
+              },
+            },
+          });
+        } catch {
+          if (!destroyed) setUseEmbed(true);
+        }
+      })
+      .catch(() => {
+        if (!destroyed) setUseEmbed(true);
       });
-    } catch {
-      if (!destroyed) setUseEmbed(true);
-    }
-  })
-  .catch(() => {
-    if (!destroyed) setUseEmbed(true);
-  });
-
 
     return () => {
       destroyed = true;
@@ -681,7 +696,6 @@ loadYouTubeAPI()
   );
 }
 
-
 /* ============================== Map banner (world map with pins) ============================== */
 function MapBanner() {
   const ref = useRef(null);
@@ -692,21 +706,32 @@ function MapBanner() {
   const [rickHover, setRickHover] = useState(false);
 
   useEffect(() => {
-    function onResize() {
+    let raf = 0;
+    const measure = () => {
       if (!ref.current) return;
       const r = ref.current.getBoundingClientRect();
-      setSize({ w: r.width, h: r.height });
-    }
-    onResize();
+      setSize((prev) =>
+        prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }
+      );
+    };
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    measure();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   const points = useMemo(() => {
+    if (!size.w || !size.h) return [];
     return Object.entries(CITY_DB)
       .filter(([, c]) => Array.isArray(c.coords) && c.coords.length === 2)
       .map(([id, c]) => ({ id, title: c.title, coords: c.coords }));
-  }, []);
+  }, [size.w, size.h]);
 
   // Project lat/lon into the current container space
   function project([lat, lon]) {
@@ -870,7 +895,8 @@ function MapBanner() {
   );
 }
 
-function MapPin({ x, y, id, title, scale = 1 }) {
+/* Memoized to avoid rerender storms on zoom/hover elsewhere */
+const MapPin = memo(function MapPin({ x, y, id, title, scale = 1 }) {
   const base = 5; // smaller starting size
   return (
     <NavLink
@@ -894,9 +920,7 @@ function MapPin({ x, y, id, title, scale = 1 }) {
       }}
     />
   );
-}
-
-
+});
 
 /* ============================== Tiny Markdown -> HTML ============================== */
 /* Supports: ### headings, **bold**, links [text](url), bullet lists '-', line breaks */
@@ -925,7 +949,6 @@ function mdToHtml(md = "") {
     .join("\n");
   return h;
 }
-
 
 /* ============================== App Shell ============================== */
 function GlobalAffiliateBanner() {
@@ -990,7 +1013,6 @@ function IvyEasterEgg({ children, hint = "you let me be" }) {
     </>
   );
 }
-
 
 // ---------- Modal for the easter egg ----------
 function IvyEggModal({ open, onClose }) {
@@ -1133,9 +1155,6 @@ function IvyEggModal({ open, onClose }) {
   );
 }
 
-
-
-
 export default function App() {
   useEffect(() => {
     const lowCores =
@@ -1150,24 +1169,21 @@ export default function App() {
     <div style={{ minHeight: "100vh" }}>
       <CanonicalTag />
       <ScrollToTop />
-      <GAViewTracker /> 
+      <GAViewTracker />
 
-      <header className="site-header" style={{ /* your current inline styles */ 
-    position: "relative",
-    borderBottom: "1px solid #022",
-    padding: "10px 20px",          // was 28px 48px
-    minHeight: 0,                   // was 50px
-    backgroundImage: "url('/images/branding/wave_portal_2.jpg')",
-    backgroundSize: "cover",        // (optional) fill nicely
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,                        // was 24
-    
-  }}
->
-
+      <header className="site-header" style={{
+        position: "relative",
+        borderBottom: "1px solid #022",
+        padding: "10px 20px",
+        minHeight: 0,
+        backgroundImage: "url('/images/branding/wave_portal_2.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}>
         <div
           style={{
             position: "absolute",
@@ -1225,51 +1241,42 @@ export default function App() {
       </header>
 
       <Routes>
-  <Route path="/" element={<Home />} />
-  <Route path="/city/:id" element={<CityDetail />} />
-  <Route path="/city/:id/land/:landId" element={<LandDetail />} />
-
-  {/* NEW: sub-land route (must be BEFORE the wildcard) */}
-  <Route path="/city/:id/land/:landId/sub/:subId" element={<SubLandDetail />} />
-
-  <Route path="/city/:id/affiliates" element={<CityAffiliates />} />
-  <Route path="/404" element={<NotFound />} />
-
-  {/* Keep this LAST */}
-  <Route path="*" element={<Navigate to="/404" replace />} />
-</Routes>
-
+        <Route path="/" element={<Home />} />
+        <Route path="/city/:id" element={<CityDetail />} />
+        <Route path="/city/:id/land/:landId" element={<LandDetail />} />
+        {/* NEW: sub-land route (must be BEFORE the wildcard) */}
+        <Route path="/city/:id/land/:landId/sub/:subId" element={<SubLandDetail />} />
+        <Route path="/city/:id/affiliates" element={<CityAffiliates />} />
+        <Route path="/404" element={<NotFound />} />
+        {/* Keep this LAST */}
+        <Route path="*" element={<Navigate to="/404" replace />} />
+      </Routes>
 
       {/* Site-wide holding banner (shows even without affiliate) */}
       <GlobalAffiliateBanner />
 
-     
-
-
-<footer
-  className="glow-footer"
-  style={{ padding: "20px 32px", marginTop: 16, textAlign: "center" }}
->
-  <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-    <span>© {new Date().getFullYear()} WavePortals — built by</span>
-    <IvyEasterEgg>
-      <img
-        src="/images/branding/ivy-mark.png"
-        alt="Ivy logo"
-        className="ivy-logo"
-        style={{
-          height: 48,
-          width: "auto",
-          transition: "transform 0.3s ease, filter 0.3s ease",
-          filter: "brightness(1.2) saturate(1.4)",
-          cursor: "pointer",
-        }}
-      />
-    </IvyEasterEgg>
-  </div>
-</footer>
-
-
+      <footer
+        className="glow-footer"
+        style={{ padding: "20px 32px", marginTop: 16, textAlign: "center" }}
+      >
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+          <span>© {new Date().getFullYear()} WavePortals — built by</span>
+          <IvyEasterEgg>
+            <img
+              src="/images/branding/ivy-mark.png"
+              alt="Ivy logo"
+              className="ivy-logo"
+              style={{
+                height: 48,
+                width: "auto",
+                transition: "transform 0.3s ease, filter 0.3s ease",
+                filter: "brightness(1.2) saturate(1.4)",
+                cursor: "pointer",
+              }}
+            />
+          </IvyEasterEgg>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1283,8 +1290,8 @@ const CITY_DB = {
     tags: ["Navy", "Hospitality", "Family Traffic"],
     earthmetaUrl:
       "https://app.earthmeta.ai/city/1714183257322253755729502084421709477194",
-     coords: [42.3173, -87.8376], // 👈 add this line (lat, lon)
-      lands: [
+    coords: [42.3173, -87.8376],
+    lands: [
       {
         id: "rtc-ceremonial-drill-hall",
         name: "RTC Ceremonial Drill Hall",
@@ -1511,31 +1518,30 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
   },
 
   "college-park-md": {
-  title: "College Park, MD – University of Maryland",
-  blurb: "Academia, research, and proximity to Washington, D.C.",
-  tags: ["University", "Research", "DC Area"],
-  earthmetaUrl:
-    "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
-  coords: [38.9807, -76.9369],
-  lands: [
-    {
-      id: "xfinity-center",
-      name: "Xfinity Center",
-      blurb: "Maryland Terrapins arena and events hub.",
-      videoUrl: "",
-      affiliateUrl: ""
-    },
-    {
-      id: "secu-stadium- Maryland Terrapins",
-      name: "SECU Stadium — Football Game Day",
-      blurb: "Football Stadium for Maryland Terrapins",
-      // time-linked YouTube; our toEmbedUrl() will convert this to the /embed form
-      videoUrl: "https://youtu.be/9q155EcabSs?t=676",
-      affiliateUrl: ""
-    }
-  ]
-},
-
+    title: "College Park, MD – University of Maryland",
+    blurb: "Academia, research, and proximity to Washington, D.C.",
+    tags: ["University", "Research", "DC Area"],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/42171341694941743383174122333559370955",
+    coords: [38.9807, -76.9369],
+    lands: [
+      {
+        id: "xfinity-center",
+        name: "Xfinity Center",
+        blurb: "Maryland Terrapins arena and events hub.",
+        videoUrl: "",
+        affiliateUrl: ""
+      },
+      {
+        id: "secu-stadium- Maryland Terrapins",
+        name: "SECU Stadium — Football Game Day",
+        blurb: "Football Stadium for Maryland Terrapins",
+        // time-linked YouTube; our toEmbedUrl() will convert this to the /embed form
+        videoUrl: "https://youtu.be/9q155EcabSs?t=676",
+        affiliateUrl: ""
+      }
+    ]
+  },
 
   "jeonju-kr": {
     title: "Jeonju, South Korea – UNESCO & food",
@@ -1571,13 +1577,13 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
         affiliateUrl: "",
       },
       {
-  id: "beats-for-love",
-  name: "Beats for Love @ Dolní Vítkovice",
-  blurb:
-    "One of Central Europe’s biggest electronic music festivals. Every early July, 100k+ fans take over Ostrava’s reimagined steelworks—dozens of stages threaded through blast furnaces, the Gong hall, and Bolt Tower. House, techno, DnB, trance, and more in a surreal industrial backdrop.",
-  videoUrl: "https://youtu.be/U7YEdDONt-0?si=XcqGEkEhGMH95Mj0", // ← paste a YouTube link here (can be youtu.be or watch?v=; we auto-convert)
-  affiliateUrl: ""
-},
+        id: "beats-for-love",
+        name: "Beats for Love @ Dolní Vítkovice",
+        blurb:
+          "One of Central Europe’s biggest electronic music festivals. Every early July, 100k+ fans take over Ostrava’s reimagined steelworks—dozens of stages threaded through blast furnaces, the Gong hall, and Bolt Tower. House, techno, DnB, trance, and more in a surreal industrial backdrop.",
+        videoUrl: "https://youtu.be/U7YEdDONt-0?si=XcqGEkEhGMH95Mj0",
+        affiliateUrl: ""
+      },
     ],
   },
 
@@ -1654,45 +1660,41 @@ Information from [Official RTC site](https://www.bootcamp.navy.mil/Graduation/)
   },
 
   "norrkoping-se": {
-  title: "Norrköping, Sweden – Reinvented industrial hub",
-  blurb:
-    "Historic industrial core turned into a tech & creative cluster — gateway to Kolmården Wildlife Park.",
-  tags: ["Tech", "Creative", "Industrial", "Wildlife"],
-  earthmetaUrl:
-    "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
-  coords: [58.5877, 16.1924],
-  lands: [
-    {
-      id: "visualization-center-c",
-      name: "Visualization Center C",
-      blurb: "Science visualization and education magnet.",
-      videoUrl: "",
-      affiliateUrl: "",
-    },
-    {
-      id: "kolmarden-zoo",
-      name: "Kolmården Wildlife Park",
-      blurb:
-        "Scandinavia’s largest zoo overlooking the Baltic Sea — home to wildlife safaris, marine shows, and the record-breaking Wildfire coaster.",
-      videoUrl: "https://youtu.be/XYrQATi5nXI?si=bouKvBVHdNLaYaK5",
-      affiliateUrl: "",
-      sublands: [
-        {
-          id: "wildfire",
-          name: "Wildfire Wooden Coaster",
-          blurb:
-            "An RMC wooden coaster that drops 57 meters, hits 115 km/h, and roars over forest cliffs with Baltic views.",
-          videoUrl: "https://youtu.be/aFm5e8fHGQ4?si=goKUMU01FS2kD34E",
-          affiliateUrl: "",
-        },
-        // Future additions (example):
-        // { id: "lion-habitat", name: "Lion Habitat", blurb: "Africa zone centerpiece.", videoUrl: "", affiliateUrl: "" },
-        // { id: "tiger-forest", name: "Tiger Forest", blurb: "Asian predators habitat.", videoUrl: "", affiliateUrl: "" },
-      ],
-    },
-  ],
-},
-
+    title: "Norrköping, Sweden – Reinvented industrial hub",
+    blurb:
+      "Historic industrial core turned into a tech & creative cluster — gateway to Kolmården Wildlife Park.",
+    tags: ["Tech", "Creative", "Industrial", "Wildlife"],
+    earthmetaUrl:
+      "https://app.earthmeta.ai/city/328978773740509271303684149061232454165",
+    coords: [58.5877, 16.1924],
+    lands: [
+      {
+        id: "visualization-center-c",
+        name: "Visualization Center C",
+        blurb: "Science visualization and education magnet.",
+        videoUrl: "",
+        affiliateUrl: "",
+      },
+      {
+        id: "kolmarden-zoo",
+        name: "Kolmården Wildlife Park",
+        blurb:
+          "Scandinavia’s largest zoo overlooking the Baltic Sea — home to wildlife safaris, marine shows, and the record-breaking Wildfire coaster.",
+        videoUrl: "https://youtu.be/XYrQATi5nXI?si=bouKvBVHdNLaYaK5",
+        affiliateUrl: "",
+        sublands: [
+          {
+            id: "wildfire",
+            name: "Wildfire Wooden Coaster",
+            blurb:
+              "An RMC wooden coaster that drops 57 meters, hits 115 km/h, and roars over forest cliffs with Baltic views.",
+            videoUrl: "https://youtu.be/aFm5e8fHGQ4?si=goKUMU01FS2kD34E",
+            affiliateUrl: "",
+          },
+        ],
+      },
+    ],
+  },
 
   "carolina-pr": {
     title: "Carolina, Puerto Rico – SJU gateway",
@@ -1730,6 +1732,21 @@ function Home() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("az");
 
+  // progressively reveal cards: paint first batch immediately, rest after idle
+  const [renderCount, setRenderCount] = useState(8);
+  useEffect(() => {
+    let cancelled = false;
+    const schedule = window.requestIdleCallback
+      ? (cb) => requestIdleCallback(cb, { timeout: 1200 })
+      : (cb) => setTimeout(cb, 0);
+    schedule(() => {
+      if (!cancelled) setRenderCount(9999);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [query, sort]);
+
   const cities = useMemo(() => {
     const arr = Object.entries(CITY_DB).map(([id, v]) => ({ id, ...v }));
     const q = query.trim().toLowerCase();
@@ -1759,8 +1776,10 @@ function Home() {
         />
       </h2>
 
-      {/* NEW: world map banner */}
-      <MapBanner />
+      {/* NEW: world map banner (lazy-mounted) */}
+      <LazyMount rootMargin="800px">
+        <MapBanner />
+      </LazyMount>
 
       <div className="toolbar">
         <input
@@ -1781,7 +1800,7 @@ function Home() {
       </div>
 
       <div className="card-list" style={{ marginTop: 12 }}>
-        {cities.map((c) => (
+        {cities.slice(0, renderCount).map((c) => (
           <div key={c.id} className="card">
             <div
               style={{
@@ -1890,8 +1909,8 @@ function CityDetail() {
           ← All cities
         </NavLink>
         <NavLink to={`/city/${id}/affiliates`} className="btn btn-primary">
-  Affiliates & Resources
-</NavLink>
+          Affiliates & Resources
+        </NavLink>
 
         {city.earthmetaUrl ? (
           <a
@@ -2060,13 +2079,9 @@ function CityAffiliates() {
           </p>
         </section>
       )}
-
-      {/* Global banner stays at bottom to funnel to your broader portal if desired */}
-      
     </main>
   );
 }
-
 
 /* ================= LAND DETAIL (RTC live-or-replay; embeds for others) ================= */
 function LandDetail() {
@@ -2133,32 +2148,31 @@ function LandDetail() {
       )}
 
       {/* --- Map embed — Welcome Center ONLY --- */}
-{land.id === "recruit-family-welcome-center" && (
-  <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
-    <h3>Map: Welcome Center, Drill Hall & Gate 8</h3>
-    <iframe
-      src="https://www.google.com/maps/d/embed?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&ehbc=2E312F"
-      title="North Chicago graduation locations map"
-      width="100%"
-      height="400"
-      style={{ border: 0, borderRadius: "12px", boxShadow: "0 0 15px rgba(0, 255, 255, 0.4)" }}
-      allowFullScreen
-      loading="lazy"
-      referrerPolicy="no-referrer-when-downgrade"
-    />
-    <div className="btn-row" style={{ marginTop: 12 }}>
-      <a
-        href="https://www.google.com/maps/d/edit?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&usp=sharing"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn btn-primary"
-      >
-        Open Interactive Map
-      </a>
-    </div>
-  </section>
-)}
-
+      {land.id === "recruit-family-welcome-center" && (
+        <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+          <h3>Map: Welcome Center, Drill Hall & Gate 8</h3>
+          <iframe
+            src="https://www.google.com/maps/d/embed?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&ehbc=2E312F"
+            title="North Chicago graduation locations map"
+            width="100%"
+            height="400"
+            style={{ border: 0, borderRadius: "12px", boxShadow: "0 0 15px rgba(0, 255, 255, 0.4)" }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <div className="btn-row" style={{ marginTop: 12 }}>
+            <a
+              href="https://www.google.com/maps/d/edit?mid=1A4ajxHJ6DaBCJoQm400Etczyfm7OEkc&usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Open Interactive Map
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* --- Recruit Family Guide (if provided) --- */}
       {land.info ? (
@@ -2208,31 +2222,29 @@ function LandDetail() {
           </a>
         ) : null}
       </div>
+
       {/* --- Sub-lands (e.g., Wildfire inside Kolmården Zoo) --- */}
-{Array.isArray(land.sublands) && land.sublands.length > 0 && (
-  <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
-    <h3 className="glow-text" style={{ marginTop: 0 }}>Attractions in {land.name}</h3>
-    <div className="card-list" style={{ marginTop: 12 }}>
-      {land.sublands.map((s) => (
-        <div key={s.id} className="card">
-          <h4 style={{ marginTop: 0 }}>{s.name}</h4>
-          <div className="muted clamp-2">{s.blurb}</div>
-          <div className="btn-row" style={{ marginTop: 8 }}>
-            <NavLink
-              to={`/city/${id}/land/${land.id}/sub/${s.id}`}
-              className="btn btn-primary"
-            >
-              View
-            </NavLink>
+      {Array.isArray(land.sublands) && land.sublands.length > 0 && (
+        <section className="glow-panel" style={{ marginTop: 24, padding: 16 }}>
+          <h3 className="glow-text" style={{ marginTop: 0 }}>Attractions in {land.name}</h3>
+          <div className="card-list" style={{ marginTop: 12 }}>
+            {land.sublands.map((s) => (
+              <div key={s.id} className="card">
+                <h4 style={{ marginTop: 0 }}>{s.name}</h4>
+                <div className="muted clamp-2">{s.blurb}</div>
+                <div className="btn-row" style={{ marginTop: 8 }}>
+                  <NavLink
+                    to={`/city/${id}/land/${land.id}/sub/${s.id}`}
+                    className="btn btn-primary"
+                  >
+                    View
+                  </NavLink>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
-    </div>
-  </section>
-)}
-
-
-      
+        </section>
+      )}
     </main>
   );
 }
