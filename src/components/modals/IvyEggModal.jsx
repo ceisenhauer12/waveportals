@@ -1,6 +1,6 @@
 // src/components/IvyEggModal.jsx
 import { useEffect, useRef } from "react";
-import { loadYouTubeAPI } from "../utils/youtube.js";
+import { loadYouTubeAPI } from "../../utils/youtube.js";
 
 export default function IvyEggModal({ open, onClose }) {
   const containerId = "ivy-yt-player";

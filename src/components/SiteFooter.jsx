@@ -1,5 +1,5 @@
 // src/components/SiteFooter.jsx
-import IvyEasterEgg from "./IvyEasterEgg.jsx";
+import IvyEasterEgg from "./modals/IvyEasterEgg.jsx";
 
 export default function SiteFooter() {
   return (
@@ -27,3 +27,4 @@ export default function SiteFooter() {
     </footer>
   );
 }
+
