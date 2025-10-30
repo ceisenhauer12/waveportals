@@ -13,6 +13,8 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { createPortal } from "react-dom"; // ← if you also import this later in the file, delete the later one
 import CITY_DB from "./data/cities.js";
 import { toEmbedUrl } from "./utils/embed.js";
+import ScrollToTop from "./components/ScrollToTop.jsx";
+
 
 
 /* ===================== GA4 page-view tracker ===================== */
@@ -485,15 +487,7 @@ function CityBannerImage({ id, title, heroImg }) {
   );
 }
 
-/* ============================== Scroll restore ============================== */
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    // "instant" is not standard, but browsers ignore unknown behavior; it's fine.
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [pathname]);
-  return null;
-}
+
 
 // ---------- One-time YouTube IFrame API loader ----------
 let __ytApiPromise;
