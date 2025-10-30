@@ -14,34 +14,11 @@ import { createPortal } from "react-dom"; // ← if you also import this later i
 import CITY_DB from "./data/cities.js";
 import { toEmbedUrl } from "./utils/embed.js";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import GAViewTracker from "./components/GAViewTracker.jsx";
 
 
 
-/* ===================== GA4 page-view tracker ===================== */
-function GAViewTracker() {
-  const location = useLocation();
-  const isDev = import.meta?.env?.DEV;
 
-  useEffect(() => {
-    const url = location.pathname + location.search;
-
-    if (!window.gtag) {
-      if (isDev) console.info("[GA] gtag missing (possibly blocked) for", url);
-      return;
-    }
-
-    window.gtag("event", "page_view", {
-      page_title: document.title || "WavePortals",
-      page_location: window.location.origin + url,
-      page_path: url,
-      debug_mode: !!isDev,
-    });
-
-    if (isDev) console.info("[GA] page_view →", url);
-  }, [location.pathname, location.search]);
-
-  return null;
-}
 
 /* ===================== Canonical <link> ===================== */
 const CANONICAL_ORIGIN = "https://www.waveportals.com";
