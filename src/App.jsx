@@ -18,10 +18,7 @@ import GAViewTracker from "./components/GAViewTracker.jsx";
 import { createPortal } from "react-dom";
 import { loadYouTubeAPI } from "./utils/youtube";
 import { MapBanner } from "./components/MapBanner.jsx";
-
-
-
-
+import AffiliateBanner from "./components/AffiliateBanner.jsx";
 
 
 
@@ -1544,59 +1541,7 @@ function SubLandDetail() {
   );
 }
 
-/* ====================== Affiliate banner (image-dominant + CTA) ====================== */
-function AffiliateBanner({
-  href,
-  imgSrc = "/images/branding/waveportal-holder.svg",
-  ctaLabel = "Launch",
-  alt = "WavePortal banner",
-}) {
-  const bannerInner = (
-    <>
-      <img
-        src={imgSrc}
-        alt={alt}
-        className="banner-img"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
-      <span className="btn btn-primary cta">{ctaLabel}</span>
-    </>
-  );
 
-  const commonStyle = { maxWidth: 980, margin: "16px auto 0" };
-
-  // If no href, render a non-clickable placeholder so the banner always shows.
-  if (!href) {
-    return (
-      <div
-        className="glow-panel glow-banner"
-        style={commonStyle}
-        role="img"
-        aria-label={alt}
-        title={alt}
-      >
-        {bannerInner}
-      </div>
-    );
-  }
-
-  // Clickable affiliate version
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer nofollow sponsored"
-      className="glow-panel glow-banner"
-      style={commonStyle}
-      aria-label={ctaLabel}
-      title={ctaLabel}
-    >
-      {bannerInner}
-    </a>
-  );
-}
 
 /* ===================================== 404 ===================================== */
 function NotFound() {
