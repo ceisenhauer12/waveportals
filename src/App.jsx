@@ -26,6 +26,7 @@ import mdToHtml from "./utils/markdown.js";
 import { buildPartnerLink } from "./utils/partners.js";
 import DeferredIframe from "./components/DeferredIframe.jsx";
 import { CityTileImage, CityBannerImage } from "./components/CityImages.jsx";
+import MapPin from "./components/MapPin.jsx";
 
 
 
@@ -260,33 +261,6 @@ function LazyMount({ children, rootMargin = "600px" }) {
   return <div ref={ref}>{inView ? children : <div style={{ height: 360 }} />}</div>;
 }
 
-
-/* Memoized to avoid rerender storms on zoom/hover elsewhere */
-const MapPin = memo(function MapPin({ x, y, id, title, scale = 1 }) {
-  const base = 5; // smaller starting size
-  return (
-    <NavLink
-      to={`/city/${id}`}
-      title={title}
-      className="map-pin"
-      style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        transform: `translate(-50%, -50%) scale(${1 / scale})`,
-        transformOrigin: "50% 50%",
-        width: base,
-        height: base,
-        borderRadius: "50%",
-        background: "#33ccff",
-        boxShadow: "0 0 4px #33ccff, 0 0 8px rgba(0,255,255,0.5)",
-        border: "1px solid #033",
-        cursor: "pointer",
-        zIndex: 2,
-      }}
-    />
-  );
-});
 
 
 
