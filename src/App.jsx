@@ -22,29 +22,10 @@ import AffiliateBanner from "./components/AffiliateBanner.jsx";
 import IvyEasterEgg from "./components/IvyEasterEgg.jsx";
 import CanonicalTag from "./components/CanonicalTag.jsx";
 import { CANONICAL_ORIGIN, usePageMeta, useShareMeta } from "./hooks/meta.js";
+import mdToHtml from "./utils/markdown.js";
+import { buildPartnerLink } from "./utils/partners.js";
 
 
-
-/* ===================== Partner / referral link helper ===================== */
-const MYE_REF = "EM20252B6414";
-const DEFAULT_UTM = {
-  utm_source: "waveportals",
-  utm_medium: "site",
-  utm_campaign: "earthmeta_cta",
-};
-function buildPartnerLink(raw) {
-  if (!raw) return "";
-  try {
-    const u = new URL(raw);
-    if (MYE_REF) u.searchParams.set("ref", MYE_REF);
-    for (const [k, v] of Object.entries(DEFAULT_UTM)) {
-      if (!u.searchParams.has(k)) u.searchParams.set(k, v);
-    }
-    return u.toString();
-  } catch {
-    return raw;
-  }
-}
 
 /* ===================== Time helpers & LIVE badge window (CT) ===================== */
 /* LIVE badge window: Thursday 9:00–11:00 AM CT (covers ceremony ~9:00–10:45) */
@@ -406,33 +387,7 @@ const MapPin = memo(function MapPin({ x, y, id, title, scale = 1 }) {
   );
 });
 
-/* ============================== Tiny Markdown -> HTML ============================== */
-/* Supports: ### headings, **bold**, links [text](url), bullet lists '-', line breaks */
-function mdToHtml(md = "") {
-  if (!md) return "";
-  // escape HTML
-  let h = md.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
-  // headings ###
-  h = h.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-  // bold **text**
-  h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  // links [text](url)
-  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-  // bullet lists: lines starting with "- " or •
-  h = h.replace(/^(?:- |\u2022 )(.*)$/gm, "<li>$1</li>");
-  h = h.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>").replace(/<\/ul>\s*<ul>/g, ""); // merge adjacent ULs
-  // line breaks → paragraphs (skip if block is h3 or ul)
-  h = h
-    .split(/\n{2,}/)
-    .map((block) => {
-      if (/^\s*<h3>/.test(block) || /^\s*<ul>/.test(block)) return block;
-      const withBr = block.replace(/\n/g, "<br/>");
-      return withBr.trim() ? `<p>${withBr}</p>` : "";
-    })
-    .join("\n");
-  return h;
-}
 
 /* ============================== App Shell ============================== */
 function GlobalAffiliateBanner() {
