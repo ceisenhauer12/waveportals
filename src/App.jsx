@@ -24,6 +24,7 @@ import CanonicalTag from "./components/CanonicalTag.jsx";
 import { CANONICAL_ORIGIN, usePageMeta, useShareMeta } from "./hooks/meta.js";
 import mdToHtml from "./utils/markdown.js";
 import { buildPartnerLink } from "./utils/partners.js";
+import DeferredIframe from "./components/DeferredIframe.jsx";
 
 
 
@@ -147,47 +148,7 @@ function RTCScheduleNote() {
   );
 }
 
-/* ===== Simple in-view lazy mount for iframes (keeps page lighter) ===== */
-function useInView(rootMargin = "250px") {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    if (!ref.current || inView) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setInView(true);
-          obs.disconnect();
-        }
-      },
-      { rootMargin }
-    );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [inView, rootMargin]);
-  return { ref, inView };
-}
 
-function DeferredIframe(props) {
-  const { ref, inView } = useInView();
-  return (
-    <div
-      ref={ref}
-      className="video-wrap"
-      style={{ marginTop: 12, aspectRatio: "16 / 9" }}
-    >
-      {inView ? (
-        <iframe
-          loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-          {...props}
-        />
-      ) : (
-        <div style={{ width: "100%", height: "100%", background: "#000" }} />
-      )}
-    </div>
-  );
-}
 
 /** Live-or-replay player */
 function LiveOrFallbackPlayer({ channelId, fallbackUrl, title }) {
