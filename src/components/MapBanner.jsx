@@ -1,36 +1,9 @@
 // src/components/MapBanner.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import RickEggModal from "./RickEggModal.jsx"; 
-
-import { CITY_DB } from "../data/cities";
-
-function MapPin({ x, y, id, title, scale = 1 }) {
-  const base = 5;
-  return (
-    <NavLink
-      to={`/city/${id}`}
-      title={title}
-      className="map-pin"
-      style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        transform: `translate(-50%, -50%) scale(${1 / scale})`,
-        transformOrigin: "50% 50%",
-        width: base,
-        height: base,
-        borderRadius: "50%",
-        background: "#33ccff",
-        boxShadow: "0 0 4px #33ccff, 0 0 8px rgba(0,255,255,0.5)",
-        border: "1px solid #033",
-        cursor: "pointer",
-        zIndex: 2,
-      }}
-    />
-  );
-}
+import RickEggModal from "./modals/RickEggModal.jsx";
+import MapPin from "./ui/MapPin.jsx";
+import CITY_DB from "../data/cities.js";
 
 export function MapBanner() {
   const ref = useRef(null);

@@ -1,7 +1,7 @@
 // src/components/RickEggModal.jsx
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { loadYouTubeAPI } from "../utils/youtube";
+import { loadYouTubeAPI } from "../../utils/youtube";
 
 export default function RickEggModal({ open, onClose }) {
   const containerId = "rick-yt-player";
