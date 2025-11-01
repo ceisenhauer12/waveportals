@@ -6,7 +6,7 @@ const CATS = [
   {
     id: "hotels",
     title: "Hotels",
-    blurb: "Stay near the action. (Placeholders until your real partners land.)",
+    blurb: "Stay near the action.",
     items: [
       { name: "Sample Hotel One", href: "#", note: "Placeholder" },
       { name: "Sample Hotel Two", href: "#", note: "Placeholder" },
@@ -51,9 +51,9 @@ export default function Affiliates() {
   return (
     <main style={{ maxWidth: 1080, margin: "24px auto", padding: "0 12px" }}>
       <header className="glow-panel" style={{ padding: 16, borderRadius: 12 }}>
-        <h1 className="glow-text" style={{ margin: 0 }}>Affiliates Directory</h1>
+        <h1 className="glow-text" style={{ margin: 0 }}>Directory</h1>
         <p className="muted" style={{ marginTop: 8 }}>
-          Categories with placeholder links — ready for your real affiliate IDs when you have them.
+          Categories with links
         </p>
       </header>
 
